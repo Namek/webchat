@@ -1,3 +1,5 @@
 .idea/
 elm-stuff/
 /frontend/public/
+/backend/dist/
+/backend/node_modules/

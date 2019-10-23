@@ -1,0 +1,43 @@
+{
+  "name": "webchat",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config webpack.env.js",
+    "start": "npm-run-all --parallel build start:server",
+    "start:server": "nodemon ./dist/server.js --watch dist",
+    "start:server:env": "node --require dotenv/config dist/server",
+    "gen_graphql_api": "elm-graphql http://localhost:4000/api --base Api --output ../frontend/src/elm/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server-express": "^2.9.6",
+    "express": "^4.17.1",
+    "graphql": "^14.5.8",
+    "graphql-import": "^0.7.1"
+  },
+  "devDependencies": {
+    "@dillonkearns/elm-graphql": "^3.6.2",
+    "@types/node": "^12.11.1",
+    "@types/webpack-env": "^1.14.1",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-watch": "^7.0.0",
+    "clean-webpack-plugin": "^3.0.0",
+    "dotenv": "^8.2.0",
+    "nodemon": "^1.19.4",
+    "npm-run-all": "^4.1.5",
+    "raw-loader": "^3.1.0",
+    "ts-loader": "^6.2.0",
+    "typescript": "^3.6.4",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.9",
+    "webpack-merge": "^4.2.2",
+    "webpack-node-externals": "^1.7.2"
+  }
+}

@@ -1,0 +1,30 @@
+scalar Datetime
+
+type Message {
+  id: Int!
+  content: String!
+  authorId: Int!
+  datetime: Datetime
+}
+type Person {
+  id: Int!
+  name: String!
+  avatarSeed: Int!
+}
+type ChatStateUpdate {
+  newPeople: [Person]
+  newMessages: [Message]
+}
+
+type Query {
+  chatState(since: Datetime): ChatStateUpdate
+}
+type Mutation {
+  # Log in if account exists. Otherwise, register and log in.
+  # The name is unique.
+  authenticate(name: String!, passwordHash: String!, since: Datetime): ChatStateUpdate
+
+  logOut: Boolean
+
+  createMessage(content: String): ChatStateUpdate
+}

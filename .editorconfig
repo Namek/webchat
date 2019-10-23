@@ -3,7 +3,7 @@ root = true
 [*]
 charset = utf-8
 
-[*.{js,ts,json}]
+[*.{js,ts,json,graphql}]
 indent_style = space
 indent_size = 2
 

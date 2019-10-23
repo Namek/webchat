@@ -1,1 +1,0 @@
-dotnet script %~dp0\build.csx -- api
