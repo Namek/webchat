@@ -1,12 +1,16 @@
 import express from 'express'
+import http from 'http'
+import WebSocket from 'ws'
 import { ApolloServer } from 'apollo-server-express'
+import { ConnectionContext } from 'subscriptions-transport-ws';
 
 import { environment } from './environment'
 import { resolvers, typeDefs } from './api'
 
-// WWW: GraphQL queries, mutations and hosting of static files (frontend)
+// HTTP: GraphQL queries, mutations and hosting of static files (frontend). Only subscriptions go over WebSocket.
 
 const app = express()
+const httpServer = http.createServer(app)
 app.use(express.static(environment.staticFilesPath))
 
 const gqlServer = new ApolloServer({
@@ -14,13 +18,22 @@ const gqlServer = new ApolloServer({
   resolvers,
   introspection: environment.apollo.introspection,
   playground: environment.apollo.playground,
+  subscriptions: {
+    onConnect: (connectionParams: any, socket: WebSocket, context: ConnectionContext) => {
+      console.log('subscription connect', connectionParams)
+    },
+    onDisconnect: (socket: WebSocket, context: ConnectionContext) => {
+      console.log('disconnected')
+    }
+  }
 })
 
 gqlServer.applyMiddleware({ app: app, path: '/api' })
+gqlServer.installSubscriptionHandlers(httpServer)
 
-const appWwwServer = app.listen(environment.portWww, () => {
-  console.log(`🚀 WWW server ready at http://localhost/${environment.portWww}`)
-  //console.log(`🚀 GraphQL server ready at http://localhost:${environment.portWebSocket}${gqlServer.graphqlPath}`)
+httpServer.listen(environment.port, () => {
+  console.log(`🚀 WWW server ready at http://localhost/${environment.port}`)
+  console.log(`🚀 Subscriptions ready at ws://localhost:${environment.port}${gqlServer.subscriptionsPath}`)
 })
 
 
@@ -31,6 +44,6 @@ if (module.hot) {
   module.hot.accept()
   module.hot.dispose(() => {
     gqlServer.stop()
-    appWwwServer.close()
+    httpServer.close()
   })
 }

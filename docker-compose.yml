@@ -13,7 +13,6 @@ services:
     build: .
     ports:
       - "127.0.0.1:8085:9085"
-      - "127.0.0.1:8086:9086"
     links:
       - "db:database"
     depends_on:

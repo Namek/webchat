@@ -15,7 +15,7 @@ import Page exposing (Page(..), frame)
 import Page.Chat as Chat
 import Page.Errored as Errored exposing (PageLoadError(..))
 import Page.Login as Login
-import Ports exposing (ConnectionStatus(..), gotChatStateUpdate, socketStatusConnected, socketStatusReconnecting)
+import Ports exposing (ConnectionStatus(..), createSubscriptions, gotChatStateUpdate, socketStatusConnected, socketStatusReconnecting)
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (sendMutationRequest, sendQueryRequest)
 import Request.Message exposing (sub_chatStateUpdate)
@@ -291,27 +291,34 @@ update msg model =
            Next thing is rerouting to the first page.
         -}
         CheckAuthSession_Response (RemoteData.Success maybeAuth) ->
-            case maybeAuth of
-                Just result ->
-                    let
-                        modelWithSession =
-                            { model
-                                | session =
-                                    LoggedSession
-                                        { id = result.personId
-                                        , name = result.personName
-                                        }
-                            }
-                    in
-                    ( modelWithSession
-                    , Route.modifyUrl model Route.Chat
-                    )
+            let
+                ( newModel, cmds ) =
+                    case maybeAuth of
+                        Just result ->
+                            let
+                                modelWithSession =
+                                    { model
+                                        | session =
+                                            LoggedSession
+                                                { id = result.personId
+                                                , name = result.personName
+                                                }
+                                    }
+                            in
+                            ( modelWithSession
+                            , Route.modifyUrl model Route.Chat
+                            )
 
-                Nothing ->
-                    {- no valid token, guest session -}
-                    ( { model | session = GuestSession }
-                    , Route.modifyUrl model Route.Chat
-                    )
+                        Nothing ->
+                            {- no valid token, guest session -}
+                            ( { model | session = GuestSession }
+                            , Route.modifyUrl model Route.Chat
+                            )
+
+                subscribeToChatUpdates =
+                    createSubscriptions (sub_chatStateUpdate |> Graphql.Document.serializeSubscription)
+            in
+            ( newModel, Cmd.batch [ cmds, subscribeToChatUpdates ] )
 
         CheckAuthSession_Response (RemoteData.Failure err) ->
             {- we don't know but let's just say it's a guest session -}

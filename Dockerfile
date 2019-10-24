@@ -43,6 +43,5 @@ COPY --from=build /backend/dist ./
 COPY --from=build /frontend/public ./public
 
 
-EXPOSE 8000
-EXPOSE 4000
+EXPOSE 8085
 ENTRYPOINT [ "NODE_ENV=production node /app/server.js" ]
