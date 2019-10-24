@@ -37,7 +37,7 @@ The name is unique.
   - since -
 
 -}
-authenticate : (AuthenticateOptionalArguments -> AuthenticateOptionalArguments) -> AuthenticateRequiredArguments -> SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet (Maybe decodesTo) RootMutation
+authenticate : (AuthenticateOptionalArguments -> AuthenticateOptionalArguments) -> AuthenticateRequiredArguments -> SelectionSet decodesTo Api.Object.SignInResult -> SelectionSet decodesTo RootMutation
 authenticate fillInOptionals requiredArgs object_ =
     let
         filledInOptionals =
@@ -47,7 +47,7 @@ authenticate fillInOptionals requiredArgs object_ =
             [ Argument.optional "since" filledInOptionals.since (Api.ScalarCodecs.codecs |> Api.Scalar.unwrapEncoder .codecDatetime) ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "authenticate" (optionalArgs ++ [ Argument.required "name" requiredArgs.name Encode.string, Argument.required "passwordHash" requiredArgs.passwordHash Encode.string ]) object_ (identity >> Decode.nullable)
+    Object.selectionForCompositeField "authenticate" (optionalArgs ++ [ Argument.required "name" requiredArgs.name Encode.string, Argument.required "passwordHash" requiredArgs.passwordHash Encode.string ]) object_ identity
 
 
 {-| -}
@@ -65,7 +65,7 @@ type alias CreateMessageOptionalArguments =
   - content -
 
 -}
-createMessage : (CreateMessageOptionalArguments -> CreateMessageOptionalArguments) -> SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet (Maybe decodesTo) RootMutation
+createMessage : (CreateMessageOptionalArguments -> CreateMessageOptionalArguments) -> SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet decodesTo RootMutation
 createMessage fillInOptionals object_ =
     let
         filledInOptionals =
@@ -75,4 +75,4 @@ createMessage fillInOptionals object_ =
             [ Argument.optional "content" filledInOptionals.content Encode.string ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "createMessage" optionalArgs object_ (identity >> Decode.nullable)
+    Object.selectionForCompositeField "createMessage" optionalArgs object_ identity

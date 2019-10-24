@@ -1,4 +1,4 @@
-module Page.Errored exposing (PageLoadError, pageLoadError, view)
+module Page.Errored exposing (Model, PageLoadError, pageLoadError, view)
 
 import Data.Session exposing (SessionState)
 import Element exposing (Element, paragraph, row, text)
@@ -26,8 +26,8 @@ pageLoadError errorMessage =
 -- VIEW --
 
 
-view : SessionState -> PageLoadError -> Element msg
-view session (PageLoadError model) =
+view : SessionState -> Model -> Element msg
+view session model =
     row []
         [ row [] [ paragraph [] [ text "Error Loading Page " ] ]
         , row [] [ paragraph [] [ text model.errorMessage ] ]

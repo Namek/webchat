@@ -15,3 +15,7 @@ type Message
 
 type Person
     = Person
+
+
+type SignInResult
+    = SignInResult

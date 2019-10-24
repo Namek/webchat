@@ -26,7 +26,7 @@ frame lift isLoggedIn session activePage pageContent =
     let
         content =
             column [ width fill, spacing 10 ]
-                [ viewIf isLoggedIn <| Element.el [ centerX ] <| viewTopBar session activePage
+                [ viewIf isLoggedIn <| Element.el [ centerX ] <| viewTopBar session AllOk
                 , Element.el [ centerX, width fill ] pageContent
                 ]
     in

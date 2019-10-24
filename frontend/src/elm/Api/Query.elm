@@ -28,7 +28,7 @@ type alias ChatStateOptionalArguments =
   - since -
 
 -}
-chatState : (ChatStateOptionalArguments -> ChatStateOptionalArguments) -> SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet (Maybe decodesTo) RootQuery
+chatState : (ChatStateOptionalArguments -> ChatStateOptionalArguments) -> SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet decodesTo RootQuery
 chatState fillInOptionals object_ =
     let
         filledInOptionals =
@@ -38,4 +38,4 @@ chatState fillInOptionals object_ =
             [ Argument.optional "since" filledInOptionals.since (Api.ScalarCodecs.codecs |> Api.Scalar.unwrapEncoder .codecDatetime) ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "chatState" optionalArgs object_ (identity >> Decode.nullable)
+    Object.selectionForCompositeField "chatState" optionalArgs object_ identity

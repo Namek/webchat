@@ -1,6 +1,5 @@
 module Data.Context exposing (..)
 
-import Data.CommonData exposing (CommonData)
 import Data.Session exposing (..)
 import Route exposing (Route)
 import Time
@@ -29,7 +28,6 @@ type alias ContextData model localMsg rootMsg =
 type alias Logged ctx =
     { ctx
         | session : Session
-        , commonData : CommonData
     }
 
 

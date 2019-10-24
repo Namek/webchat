@@ -11,9 +11,7 @@ type alias PersonId =
 type alias Person =
     { id : PersonId
     , name : String
-    , email : String
-    , timezone : Time.Zone
-    , avatarUrl : String
+    , avatarSeed : Int
     }
 
 
@@ -32,6 +30,12 @@ type alias ChatMessage =
 
     -- UTC time
     , datetime : Time.Posix
+    }
+
+
+type alias ChatStateUpdate =
+    { newPeople : People
+    , newMessages : List ChatMessage
     }
 
 

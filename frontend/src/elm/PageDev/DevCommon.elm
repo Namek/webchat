@@ -1,6 +1,5 @@
 module PageDev.DevCommon exposing (Model, Msg(..), init, makeCtx, update, view)
 
-import Data.CommonData exposing (CommonData)
 import Data.Context exposing (GlobalMsg)
 import Data.Session exposing (Session)
 import Element exposing (Element, above, alignRight, centerX, clipY, column, fill, height, inFront, maximum, padding, paddingEach, scrollbarY, text, width)
@@ -19,7 +18,6 @@ type alias Model subModel =
     , time : Time.Posix
     , timezone : Time.Zone
     , session : Session
-    , commonData : CommonData
     }
 
 
@@ -36,7 +34,6 @@ type alias Context subModel msg =
     , time : Time.Posix
     , timezone : Time.Zone
     , session : Session
-    , commonData : CommonData
     }
 
 
@@ -47,7 +44,6 @@ makeCtx model =
     , timezone = Time.utc
     , time = Time.millisToPosix 0
     , session = model.session
-    , commonData = model.commonData
     }
 
 
@@ -65,17 +61,12 @@ init subInit =
         caughtCmds =
             Cmd.map (Debug.log "init" << GotPageMsg) <| subCmds
 
-        commonData : CommonData
-        commonData =
-            {}
-
         model : Model subModel
         model =
             { subModel = subModel
             , time = Time.millisToPosix 0
             , timezone = Time.utc
             , session = session
-            , commonData = commonData
             }
 
         getTimeCmd =

@@ -51,9 +51,9 @@ handlePageMsg model pageMsg =
                 testPeople =
                     Dict.empty
                         |> Dict.insert 1
-                            { id = 1, name = "Julie", email = "julie@dot.com", timezone = Time.utc, avatarUrl = "" }
+                            { id = 1, name = "Julie", timezone = Time.utc, avatarSeed = 1235 }
                         |> Dict.insert 2
-                            { id = 2, name = "Margharet", email = "marghie@dot.com", timezone = Time.utc, avatarUrl = "" }
+                            { id = 2, name = "Margharet", timezone = Time.utc, avatarSeed = 7647456 }
 
                 testMessages : List ChatMessage
                 testMessages =

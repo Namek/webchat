@@ -2,7 +2,7 @@
 -- https://github.com/dillonkearns/elm-graphql
 
 
-module Api.Object.ChatStateUpdate exposing (..)
+module Api.Object.SignInResult exposing (..)
 
 import Api.InputObject
 import Api.Interface
@@ -20,12 +20,18 @@ import Json.Decode as Decode
 
 
 {-| -}
-newPeople : SelectionSet decodesTo Api.Object.Person -> SelectionSet (List decodesTo) Api.Object.ChatStateUpdate
-newPeople object_ =
-    Object.selectionForCompositeField "newPeople" [] object_ (identity >> Decode.list)
+chatState : SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet decodesTo Api.Object.SignInResult
+chatState object_ =
+    Object.selectionForCompositeField "chatState" [] object_ identity
 
 
 {-| -}
-newMessages : SelectionSet decodesTo Api.Object.Message -> SelectionSet (List decodesTo) Api.Object.ChatStateUpdate
-newMessages object_ =
-    Object.selectionForCompositeField "newMessages" [] object_ (identity >> Decode.list)
+personId : SelectionSet Int Api.Object.SignInResult
+personId =
+    Object.selectionForField "Int" "personId" [] Decode.int
+
+
+{-| -}
+personName : SelectionSet String Api.Object.SignInResult
+personName =
+    Object.selectionForField "String" "personName" [] Decode.string

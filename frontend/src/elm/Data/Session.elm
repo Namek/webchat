@@ -12,7 +12,6 @@ import Json.Encode as Encode exposing (Value)
 -}
 type alias Session =
     { id : Int
-    , email : String
     , name : String
     }
 

@@ -1,8 +1,7 @@
 module Page.Chat exposing (..)
 
 import Cmd.Extra
-import Data.Chat exposing (ChatMessage, People, Person, PersonId, minutesToPassToGroupMessage, personName)
-import Data.CommonData exposing (CommonData)
+import Data.Chat exposing (ChatMessage, ChatStateUpdate, People, Person, PersonId, minutesToPassToGroupMessage, personName)
 import Data.Context exposing (ContextData, GlobalMsg, Logged)
 import Data.Session exposing (Session)
 import Dict
@@ -31,12 +30,6 @@ type alias Model =
 type alias ChatState =
     { people : People
     , messages : ChatMessages
-    }
-
-
-type alias ChatStateUpdate =
-    { newPeople : People
-    , newMessages : List ChatMessage
     }
 
 

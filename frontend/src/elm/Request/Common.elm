@@ -1,16 +1,14 @@
 module Request.Common exposing
-    ( sendMutationRequest
+    ( decodeDatetime
+    , sendMutationRequest
     , sendQueryRequest
     )
 
-import Data.Session exposing (Session)
+import Api.Scalar
 import Graphql.Http as Http
 import Graphql.Operation exposing (RootMutation, RootQuery)
-import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
-import ISO8601
-import Json.Decode as Decode
+import Graphql.SelectionSet exposing (SelectionSet)
 import RemoteData exposing (RemoteData)
-import Task exposing (Task)
 import Time exposing (Posix)
 
 
@@ -32,14 +30,9 @@ sendMutationRequest dataHandlerMsg query =
         |> Http.send (RemoteData.fromResult >> dataHandlerMsg)
 
 
-
-{-
-   decodeDate : Api.Scalar.Date -> Posix
-   decodeDate (Api.Scalar.Date str) =
-       case ISO8601.fromString str of
-           Ok time ->
-               ISO8601.toPosix time
-
-           Err errorMessage ->
-               Debug.todo "omg"
--}
+decodeDatetime : Api.Scalar.Datetime -> Time.Posix
+decodeDatetime (Api.Scalar.Datetime datetime) =
+    datetime
+        |> String.toInt
+        |> Maybe.withDefault 0
+        |> Time.millisToPosix

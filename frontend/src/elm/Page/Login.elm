@@ -10,8 +10,9 @@ import Element.Input as Input exposing (focusedOnLoad, placeholder)
 import Graphql.Http as Http
 import Html.Events
 import Json.Decode as Json
-import Misc exposing (attr, attrWhen, emailRegex, match, styledButton, viewIf)
+import Misc exposing (attr, attrWhen, emailRegex, match, viewIf)
 import Misc.Colors as Colors
+import Misc.Ui exposing (styledButton)
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (..)
 import Request.Session exposing (..)
@@ -20,7 +21,7 @@ import Task
 
 
 type alias Model =
-    { email : String
+    { name : String
     , password : String
     , focusedField : Field
     , isLoading : Bool
@@ -29,7 +30,7 @@ type alias Model =
 
 initialModel : Model
 initialModel =
-    { email = ""
+    { name = ""
     , password = ""
     , focusedField = None
     , isLoading = False
@@ -37,7 +38,7 @@ initialModel =
 
 
 type Msg
-    = SetEmail String
+    = SetName String
     | SetPassword String
     | OnFieldFocused Field
     | OnFieldBlurred
@@ -57,8 +58,8 @@ update ctx msg =
             ctx
     in
     case msg of
-        SetEmail email ->
-            ( ( { model | email = email }, Cmd.none ), Cmd.none )
+        SetName name ->
+            ( ( { model | name = name }, Cmd.none ), Cmd.none )
 
         SetPassword password ->
             ( ( { model | password = password }, Cmd.none ), Cmd.none )
@@ -83,7 +84,7 @@ update ctx msg =
         SignIn ->
             let
                 cmd =
-                    signIn model
+                    authorize model
                         |> sendMutationRequest SignIn_Response
             in
             ( ( { model | isLoading = True }, cmd ), Cmd.none )
@@ -94,8 +95,8 @@ update ctx msg =
                     ( ( model, Cmd.none )
                     , Cmd.batch <|
                         List.map Cmd.Extra.perform
-                            [ SetSession (Just signInResult)
-                            , Navigate Route.Balances
+                            [ SetSession (Just { id = signInResult.personId, name = signInResult.personName })
+                            , Navigate Route.Chat
                             ]
                     )
 
@@ -112,12 +113,12 @@ view ctx =
         isPasswordTooShort =
             String.length model.password < minPasswordLength
 
-        shouldErrorEmail =
-            if String.isEmpty model.email || model.focusedField == Email then
+        shouldErrorName =
+            if String.isEmpty model.name || model.focusedField == Name then
                 False
 
             else
-                not <| match emailRegex model.email
+                not <| match emailRegex model.name
 
         shouldErrorPassword =
             if String.isEmpty model.password || model.focusedField == Password then
@@ -144,13 +145,13 @@ view ctx =
                 , attr "name" "email"
                 , focusedOnLoad
                 , Element.htmlAttribute <| Html.Events.on "keydown" (Json.map (ctx.lift << OnInFormKeyDown) Html.Events.keyCode)
-                , viewInputError shouldErrorEmail <| "Not an e-mail"
-                , onFocus (lift <| OnFieldFocused Email)
+                , viewInputError shouldErrorName <| "Not an e-mail"
+                , onFocus (lift <| OnFieldFocused Name)
                 , onLoseFocus (lift <| OnFieldBlurred)
                 , attr "disabled" "disabled" |> attrWhen formDisabled
                 ]
-                { onChange = lift << SetEmail
-                , text = model.email
+                { onChange = lift << SetName
+                , text = model.name
                 , placeholder = Just <| placeholder [] <| text "E-mail"
                 , label = Input.labelHidden "E-mail"
                 }
@@ -202,11 +203,12 @@ minPasswordLength =
 
 isLoginFilled : Model -> Bool
 isLoginFilled model =
-    match emailRegex model.email
-        && (String.length model.password >= minPasswordLength)
+    (&&)
+        (String.length model.name > 3)
+        (String.length model.password >= minPasswordLength)
 
 
 type Field
     = None
-    | Email
+    | Name
     | Password

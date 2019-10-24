@@ -3,13 +3,13 @@ module Main exposing (main)
 import Browser exposing (Document)
 import Browser.Navigation as Nav
 import Cmd.Extra
-import Data.CommonData exposing (CommonData)
 import Data.Context exposing (GlobalMsg(..))
 import Data.Session as Session exposing (Session, SessionState(..))
 import Date exposing (Date)
 import Element exposing (Element, paragraph, text)
 import Graphql.Http
 import Html exposing (text)
+import ISO8601 exposing (Time)
 import Misc exposing (css, noCmd)
 import Page exposing (Page(..), TopBarState, frame)
 import Page.Chat as Chat
@@ -17,7 +17,7 @@ import Page.Errored as Errored exposing (PageLoadError(..))
 import Page.Login as Login
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (sendMutationRequest, sendQueryRequest)
-import Request.Session exposing (SignInResult, SignOutResult, checkSession, signOut)
+import Request.Session exposing (SignInResult, SignOutResult, checkSession, logOut)
 import Route exposing (Route, modifyUrl)
 import Task
 import Time
@@ -56,7 +56,6 @@ type alias Model =
     , time : Time.Posix
     , timezone : Time.Zone
     , session : SessionState
-    , commonData : CommonData
     }
 
 
@@ -73,8 +72,6 @@ init _ url navKey =
             , session = GuestSession
             , time = Time.millisToPosix 0
             , timezone = Time.utc
-            , commonData =
-                {}
             }
     in
     ( model
@@ -130,15 +127,6 @@ viewPage model page =
                     _ ->
                         Debug.todo "you have to be authorized!"
 
-        getAuthorizedCommonData =
-            \() ->
-                case model.session of
-                    LoggedSession _ ->
-                        model.commonData
-
-                    _ ->
-                        Debug.todo "you have to be authorized!"
-
         pageView =
             case page of
                 Blank ->
@@ -162,7 +150,6 @@ viewPage model page =
                         , time = model.time
                         , timezone = model.timezone
                         , session = getAuthorizedSession ()
-                        , commonData = getAuthorizedCommonData ()
                         }
     in
     frame page pageView
@@ -190,7 +177,6 @@ type Msg
     | UrlRequested Browser.UrlRequest
     | CheckAuthSession
     | CheckAuthSession_Response (RemoteData (Graphql.Http.Error (Maybe SignInResult)) (Maybe SignInResult))
-    | GetCommonData_Response (RemoteData (Graphql.Http.Error (List Person)) (List Person))
     | SignOut_Response (RemoteData (Graphql.Http.Error SignOutResult) SignOutResult)
     | LoginMsg Login.Msg
     | ChatMsg Chat.Msg
@@ -209,12 +195,6 @@ pageErrored model errorMessage =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        queryCommonData =
-            \() -> Cmd.none
-
-        --\() -> getPeople |> sendQueryRequest GetCommonData_Response
-    in
     case msg of
         SetTimezone zone ->
             { model | timezone = zone } |> noCmd
@@ -228,26 +208,17 @@ update msg model =
                     ( model, Route.modifyUrl model route )
 
                 SetSession (Just session) ->
-                    ( { model | session = LoggedSession session }, queryCommonData () )
+                    { model | session = LoggedSession session } |> noCmd
 
                 SetSession Nothing ->
                     -- TODO: logout
-                    ( { model | session = GuestSession }, Cmd.none )
-
-                UpdateTopBarState TopBarState ->
-                    let
-                        updatedSession =
-                            case model.session of
-                                LoggedSession session ->
-                                    LoggedSession { session | inboxSize = inboxSize }
-
-                                whatever ->
-                                    whatever
-                    in
-                    { model | session = updatedSession } |> noCmd
+                    { model | session = GuestSession } |> noCmd
 
                 SetScrollbarsVisibility visible ->
                     { model | hideScrollbars = not visible } |> noCmd
+
+                RequestTimeUpdate ->
+                    ( model, Task.perform SetTime Time.now )
 
         -- it's called when user first enters URL of website or back/forward is clicked
         UrlChanged url ->
@@ -288,12 +259,12 @@ update msg model =
         -}
         CheckAuthSession_Response (RemoteData.Success maybeAuth) ->
             case maybeAuth of
-                Just session ->
+                Just result ->
                     let
                         modelWithSession =
-                            { model | session = LoggedSession session }
+                            { model | session = LoggedSession { id = result.personId, name = result.personName } }
                     in
-                    ( modelWithSession, queryCommonData () )
+                    modelWithSession |> noCmd
 
                 Nothing ->
                     {- no valid token, guest session -}
@@ -307,39 +278,6 @@ update msg model =
 
         CheckAuthSession_Response _ ->
             model |> noCmd
-
-        GetCommonData_Response result ->
-            let
-                maybeNewModel =
-                    result
-                        |> RemoteData.andThen
-                            (\people ->
-                                let
-                                    commonData =
-                                        model.commonData
-                                in
-                                RemoteData.Success <| { model | commonData = { commonData | people = people } }
-                            )
-
-                newModel =
-                    maybeNewModel |> RemoteData.withDefault model
-
-                cmd =
-                    if RemoteData.isSuccess maybeNewModel then
-                        let
-                            newRoute =
-                                Route.fromUrl model.lastLocation
-                                    |> Maybe.withDefault Route.LoggedChat
-
-                            rerouteCmd =
-                                Route.modifyUrl newModel newRoute
-                        in
-                        rerouteCmd
-
-                    else
-                        Cmd.none
-            in
-            ( newModel, cmd )
 
         SignOut_Response _ ->
             model |> noCmd
@@ -370,7 +308,6 @@ updatePage page msg model =
             , time = model.time
             , timezone = model.timezone
             , session = session
-            , commonData = model.commonData
             }
 
         buildGuestCtx subModel lift =
@@ -451,8 +388,5 @@ initRoute maybeRoute model =
                 ]
             )
 
-        Just Route.NewTransaction ->
-            initWhenLogged NewTransaction.init Page.NewTransaction NewTransactionMsg
-
-        Just Route.Balances ->
-            initWhenLogged Balances.init Page.Balances BalancesMsg
+        Just Route.Chat ->
+            initWhenLogged Chat.init Page.Chat ChatMsg

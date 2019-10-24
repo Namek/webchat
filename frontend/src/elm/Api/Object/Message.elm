@@ -38,6 +38,6 @@ authorId =
 
 
 {-| -}
-datetime : SelectionSet (Maybe Api.ScalarCodecs.Datetime) Api.Object.Message
+datetime : SelectionSet Api.ScalarCodecs.Datetime Api.Object.Message
 datetime =
-    Object.selectionForField "(Maybe ScalarCodecs.Datetime)" "datetime" [] (Api.ScalarCodecs.codecs |> Api.Scalar.unwrapCodecs |> .codecDatetime |> .decoder |> Decode.nullable)
+    Object.selectionForField "ScalarCodecs.Datetime" "datetime" [] (Api.ScalarCodecs.codecs |> Api.Scalar.unwrapCodecs |> .codecDatetime |> .decoder)

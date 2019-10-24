@@ -4,7 +4,7 @@ type Message {
   id: Int!
   content: String!
   authorId: Int!
-  datetime: Datetime
+  datetime: Datetime!
 }
 type Person {
   id: Int!
@@ -12,19 +12,24 @@ type Person {
   avatarSeed: Int!
 }
 type ChatStateUpdate {
-  newPeople: [Person]
-  newMessages: [Message]
+  newPeople: [Person!]!
+  newMessages: [Message!]!
+}
+type SignInResult {
+  chatState: ChatStateUpdate!
+  personId: Int!
+  personName: String!
 }
 
 type Query {
-  chatState(since: Datetime): ChatStateUpdate
+  chatState(since: Datetime): ChatStateUpdate!
 }
 type Mutation {
   # Log in if account exists. Otherwise, register and log in.
   # The name is unique.
-  authenticate(name: String!, passwordHash: String!, since: Datetime): ChatStateUpdate
+  authenticate(name: String!, passwordHash: String!, since: Datetime): SignInResult!
 
   logOut: Boolean
 
-  createMessage(content: String): ChatStateUpdate
+  createMessage(content: String): ChatStateUpdate!
 }

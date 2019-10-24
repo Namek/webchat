@@ -11,8 +11,7 @@ import Url.Parser.Query as Query
 type Route
     = Login
     | Logout
-    | AnonymousChat
-    | LoggedChat
+    | Chat
 
 
 parseRoute : Parser (Route -> a) a
@@ -20,8 +19,7 @@ parseRoute =
     oneOf
         [ map Login (s "login")
         , map Logout (s "logout")
-        , map AnonymousChat (s "chat")
-        , map LoggedChat (s "chat")
+        , map Chat (s "chat")
         ]
 
 
@@ -36,10 +34,7 @@ routeToString page =
                 Logout ->
                     "logout"
 
-                AnonymousChat ->
-                    "chat"
-
-                LoggedChat ->
+                Chat ->
                     "chat"
     in
     "#/" ++ url
