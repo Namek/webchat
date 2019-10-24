@@ -9,7 +9,7 @@
     "start": "npm-run-all --parallel build start:server",
     "start:server": "nodemon ./dist/server.js --watch dist",
     "start:server:env": "node --require dotenv/config dist/server",
-    "gen_graphql_api": "elm-graphql http://localhost:8086/api --base Api --output ../frontend/src/elm/",
+    "gen_graphql_api": "elm-graphql http://localhost:8085/api --base Api --output ../frontend/src/elm/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -19,7 +19,8 @@
     "apollo-server-express": "^2.9.6",
     "express": "^4.17.1",
     "graphql": "^14.5.8",
-    "graphql-import": "^0.7.1"
+    "graphql-import": "^0.7.1",
+    "graphql-subscriptions": "^1.1.0"
   },
   "devDependencies": {
     "@dillonkearns/elm-graphql": "^3.6.2",

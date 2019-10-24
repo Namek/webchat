@@ -34,7 +34,7 @@ type alias ChatMessage =
 
 
 type alias ChatStateUpdate =
-    { newPeople : People
+    { people : People
     , newMessages : List ChatMessage
     }
 

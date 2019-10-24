@@ -1,5 +1,11 @@
+import path from 'path'
+
 const defaultPortWww = 8085;
 const defaultPortWebsocket = 8086;
+const isDevelopment = !!module.hot //env == "development"
+const staticFilesPath = path.resolve(path.dirname(process.argv[1]),
+  isDevelopment ? "../../frontend/public" : "./public")
+
 
 export interface Environment {
   apollo: {
@@ -8,12 +14,9 @@ export interface Environment {
   }
   portWebSocket: number
   portWww: number
-  staticFilesPath: string
-}
 
-let env = process.env.NODE_ENV
-if (env != 'production' && env != 'development') {
-  env = 'development'
+  // relative to output `server.js` file
+  staticFilesPath: string
 }
 
 export const environment: Environment = {
@@ -22,5 +25,6 @@ export const environment: Environment = {
     playground: process.env.APOLLO_PLAYGROUND === 'true'
   },
   portWebSocket: +(process.env.PORT_WS || defaultPortWebsocket),
-  portWww: +(process.env.PORT_WWW || defaultPortWww)
+  portWww: +(process.env.PORT_WWW || defaultPortWww),
+  staticFilesPath
 };

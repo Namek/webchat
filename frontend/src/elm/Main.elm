@@ -3,21 +3,23 @@ module Main exposing (main)
 import Browser exposing (Document)
 import Browser.Navigation as Nav
 import Cmd.Extra
+import Data.Chat exposing (ChatStateUpdate)
 import Data.Context exposing (GlobalMsg(..))
-import Data.Session as Session exposing (Session, SessionState(..))
-import Date exposing (Date)
+import Data.Session exposing (Session, SessionState(..))
 import Element exposing (Element, paragraph, text)
+import Graphql.Document
 import Graphql.Http
-import Html exposing (text)
-import ISO8601 exposing (Time)
+import Json.Decode
 import Misc exposing (css, noCmd)
-import Page exposing (Page(..), TopBarState, frame)
+import Page exposing (Page(..), frame)
 import Page.Chat as Chat
 import Page.Errored as Errored exposing (PageLoadError(..))
 import Page.Login as Login
+import Ports exposing (ConnectionStatus(..), gotChatStateUpdate, socketStatusConnected, socketStatusReconnecting)
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (sendMutationRequest, sendQueryRequest)
-import Request.Session exposing (SignInResult, SignOutResult, checkSession, logOut)
+import Request.Message exposing (sub_chatStateUpdate)
+import Request.Session exposing (LogInResult, LogOutResult, checkAuthSession, logOut)
 import Route exposing (Route, modifyUrl)
 import Task
 import Time
@@ -55,6 +57,7 @@ type alias Model =
     , hideScrollbars : Bool
     , time : Time.Posix
     , timezone : Time.Zone
+    , connectionStatus : ConnectionStatus
     , session : SessionState
     }
 
@@ -72,6 +75,7 @@ init _ url navKey =
             , session = GuestSession
             , time = Time.millisToPosix 0
             , timezone = Time.utc
+            , connectionStatus = NotConnected
             }
     in
     ( model
@@ -96,11 +100,14 @@ view : Model -> Document Msg
 view model =
     let
         bodyAttrs =
-            if model.hideScrollbars then
-                [ css "overflow" "hidden", css "height" "100%", css "width" "100%" ]
+            List.append
+                [ css "max-height" "100vh" ]
+                (if model.hideScrollbars then
+                    [ css "overflow" "hidden", css "height" "100%", css "width" "100%" ]
 
-            else
-                []
+                 else
+                    []
+                )
     in
     { title = "Webchat"
     , body =
@@ -162,7 +169,10 @@ viewPage model page =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        []
+        [ gotChatStateUpdate GotWebSocketData
+        , socketStatusConnected (NewWebSocketStatus Connected)
+        , socketStatusReconnecting (NewWebSocketStatus Reconnecting)
+        ]
 
 
 
@@ -172,25 +182,22 @@ subscriptions model =
 type Msg
     = SetTimezone Time.Zone
     | SetTime Time.Posix
+    | NewWebSocketStatus ConnectionStatus ()
+    | GotWebSocketData Json.Decode.Value
     | HandleGlobalMsg GlobalMsg
     | UrlChanged Url.Url
     | UrlRequested Browser.UrlRequest
     | CheckAuthSession
-    | CheckAuthSession_Response (RemoteData (Graphql.Http.Error (Maybe SignInResult)) (Maybe SignInResult))
-    | SignOut_Response (RemoteData (Graphql.Http.Error SignOutResult) SignOutResult)
+    | CheckAuthSession_Response (RemoteData (Graphql.Http.Error (Maybe LogInResult)) (Maybe LogInResult))
+    | LogOut_Response (RemoteData (Graphql.Http.Error LogOutResult) LogOutResult)
     | LoginMsg Login.Msg
     | ChatMsg Chat.Msg
 
 
 pageErrored : Model -> String -> ( Model, Cmd msg )
 pageErrored model errorMessage =
-    let
-        error =
-            Errored.pageLoadError errorMessage
-    in
-    ( { model | page = Errored error }
-    , Cmd.none
-    )
+    { model | page = Errored { errorMessage = errorMessage } }
+        |> noCmd
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -201,6 +208,32 @@ update msg model =
 
         SetTime time ->
             { model | time = time } |> noCmd
+
+        NewWebSocketStatus status () ->
+            { model | connectionStatus = status } |> noCmd
+
+        GotWebSocketData data ->
+            case Json.Decode.decodeValue (sub_chatStateUpdate |> Graphql.Document.decoder) (Debug.log "data" data) of
+                Ok stateUpdate ->
+                    let
+                        chatStateUpdate : ChatStateUpdate
+                        chatStateUpdate =
+                            stateUpdate
+                    in
+                    case model.page of
+                        Chat pageModel ->
+                            let
+                                subModel =
+                                    Chat.receiveChatStateUpdate pageModel chatStateUpdate
+                            in
+                            { model | page = Chat subModel } |> noCmd
+
+                        _ ->
+                            model |> noCmd
+
+                Err error ->
+                    -- TODO show error in top bar?
+                    model |> noCmd
 
         HandleGlobalMsg globalMsg ->
             case globalMsg of
@@ -249,27 +282,35 @@ update msg model =
         CheckAuthSession ->
             let
                 cmd =
-                    checkSession ()
-                        |> sendMutationRequest CheckAuthSession_Response
+                    checkAuthSession ()
+                        |> sendQueryRequest CheckAuthSession_Response
             in
             ( model, cmd )
 
         {- Auth session is the first thing that comes from this app to backend - decides whether user is still logged in.
-           Then, we request for some data common for all pages. If we'll get it, reroute to the first page.
+           Next thing is rerouting to the first page.
         -}
         CheckAuthSession_Response (RemoteData.Success maybeAuth) ->
             case maybeAuth of
                 Just result ->
                     let
                         modelWithSession =
-                            { model | session = LoggedSession { id = result.personId, name = result.personName } }
+                            { model
+                                | session =
+                                    LoggedSession
+                                        { id = result.personId
+                                        , name = result.personName
+                                        }
+                            }
                     in
-                    modelWithSession |> noCmd
+                    ( modelWithSession
+                    , Route.modifyUrl model Route.Chat
+                    )
 
                 Nothing ->
                     {- no valid token, guest session -}
                     ( { model | session = GuestSession }
-                    , Route.modifyUrl model Route.Login
+                    , Route.modifyUrl model Route.Chat
                     )
 
         CheckAuthSession_Response (RemoteData.Failure err) ->
@@ -279,7 +320,7 @@ update msg model =
         CheckAuthSession_Response _ ->
             model |> noCmd
 
-        SignOut_Response _ ->
+        LogOut_Response _ ->
             model |> noCmd
 
         _ ->
@@ -383,7 +424,7 @@ initRoute maybeRoute model =
         Just Route.Logout ->
             ( { model | session = GuestSession }
             , Cmd.batch
-                [ signOut () |> sendMutationRequest SignOut_Response
+                [ logOut () |> sendMutationRequest LogOut_Response
                 , Route.modifyUrl model Route.Login
                 ]
             )

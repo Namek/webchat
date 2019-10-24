@@ -15,6 +15,8 @@ import List.Extra
 import Misc exposing (css, edges, noCmd, performMsgWithDelay, timeRelativeString)
 import Misc.Colors as Colors
 import RemoteData exposing (RemoteData)
+import Request.Common exposing (sendMutationRequest, sendQueryRequest)
+import Request.Message exposing (addMessage, getChatState)
 import Time
 import Time.Extra exposing (Interval(..), posixToParts)
 
@@ -36,12 +38,17 @@ type alias ChatState =
 init : Session -> ( Model, Cmd Msg )
 init session =
     let
-        state =
+        model =
             { chatState = Nothing, inputText = "" }
     in
-    ( state
-    , performMsgWithDelay 1 <| UpdateChatStateSince (Time.millisToPosix 0)
+    ( model
+    , performMsgWithDelay 1 <| UpdateChatStateSince Nothing
     )
+
+
+receiveChatStateUpdate : Model -> ChatStateUpdate -> Model
+receiveChatStateUpdate model chatStateUpdate =
+    { model | chatState = Just <| mergeUpdateToChatState model.chatState chatStateUpdate }
 
 
 type alias Context msg =
@@ -68,12 +75,12 @@ messageCount =
 
 
 type Msg
-    = UpdateChatStateSince Time.Posix
+    = UpdateChatStateSince (Maybe Time.Posix)
     | UpdateChatStateSince_Response (RemoteData (Graphql.Http.Error ChatStateUpdate) ChatStateUpdate)
     | SetInputText String
     | OnInputTextKeyDown Int
     | SendMessage String
-    | SendMessage_Response (RemoteData (Graphql.Http.Error ChatStateUpdate) ChatStateUpdate)
+    | SendMessage_Response (RemoteData (Graphql.Http.Error ()) ())
 
 
 update : Context msg -> Msg -> ( ( Model, Cmd Msg ), Cmd GlobalMsg )
@@ -84,8 +91,12 @@ update { model } msg =
     in
     case msg of
         UpdateChatStateSince posix ->
-            -- TODO make a graphql request
-            model |> noCmd |> noCmd
+            let
+                queryCmd =
+                    getChatState posix
+                        |> sendQueryRequest UpdateChatStateSince_Response
+            in
+            ( model, queryCmd ) |> noCmd
 
         UpdateChatStateSince_Response maybeTheUpdate ->
             let
@@ -122,21 +133,29 @@ update { model } msg =
             ( newModel, cmd ) |> noCmd
 
         SendMessage text ->
-            -- TODO graphql mutation
+            let
+                mutationCmd =
+                    addMessage text
+                        |> sendMutationRequest SendMessage_Response
+            in
+            model |> Cmd.Extra.with mutationCmd |> noCmd
+
+        SendMessage_Response _ ->
             model |> noCmd |> noCmd
 
-        SendMessage_Response maybeTheUpdate ->
-            let
-                newChatState =
-                    maybeTheUpdate
-                        |> RemoteData.map
-                            (\theUpdate ->
-                                Just <| mergeUpdateToChatState chatState theUpdate
-                            )
-                        -- TODO: show the error in modal or elsewhere, instead of returning old state
-                        |> RemoteData.withDefault chatState
-            in
-            { model | chatState = newChatState } |> noCmd |> noCmd
+
+
+--            let
+--                newChatState =
+--                    maybeTheUpdate
+--                        |> RemoteData.map
+--                            (\theUpdate ->
+--                                Just <| mergeUpdateToChatState chatState theUpdate
+--                            )
+--                        -- TODO: show the error in modal or elsewhere, instead of returning old state
+--                        |> RemoteData.withDefault chatState
+--            in
+--            { model | chatState = newChatState } |> noCmd |> noCmd
 
 
 mergeUpdateToChatState : Maybe ChatState -> ChatStateUpdate -> ChatState
@@ -145,7 +164,7 @@ mergeUpdateToChatState currentState theUpdate =
         Nothing ->
             let
                 people =
-                    theUpdate.newPeople
+                    theUpdate.people
             in
             { people = people
             , messages = insertAndGroupMessages people [] theUpdate.newMessages
@@ -153,8 +172,10 @@ mergeUpdateToChatState currentState theUpdate =
 
         Just oldState ->
             let
+                -- Note: some people may have disappeared from chat but we may
+                -- still have old messages so let's not dump old peeps, for now.
                 people =
-                    Dict.union theUpdate.newPeople oldState.people
+                    Dict.union theUpdate.people oldState.people
 
                 messages =
                     insertAndGroupMessages people oldState.messages theUpdate.newMessages

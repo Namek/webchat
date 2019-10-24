@@ -4,9 +4,10 @@ import { ApolloServer } from 'apollo-server-express'
 import { environment } from './environment'
 import { resolvers, typeDefs } from './api'
 
-// WebSocket: GraphQL (auth, chat messaging, chat updates)
+// WWW: GraphQL queries, mutations and hosting of static files (frontend)
 
-const appWebSocket = express()
+const app = express()
+app.use(express.static(environment.staticFilesPath))
 
 const gqlServer = new ApolloServer({
   typeDefs,
@@ -15,27 +16,21 @@ const gqlServer = new ApolloServer({
   playground: environment.apollo.playground,
 })
 
-gqlServer.applyMiddleware({ app: appWebSocket, path: '/api' })
+gqlServer.applyMiddleware({ app: app, path: '/api' })
 
-appWebSocket.listen(environment.portWebSocket, () => {
-  console.log(`🚀 WebSocket (GraphQL) server ready at http://localhost:${environment.portWebSocket}${gqlServer.graphqlPath}`)
+const appWwwServer = app.listen(environment.portWww, () => {
+  console.log(`🚀 WWW server ready at http://localhost/${environment.portWww}`)
+  //console.log(`🚀 GraphQL server ready at http://localhost:${environment.portWebSocket}${gqlServer.graphqlPath}`)
 })
 
 
-// WWW (http): host static files, frontend
-
-const appWww = express()
-
-appWww.listen(environment.portWww, () => {
-  console.log(`WWW server ready at http://localhost/${environment.portWww}`)
-})
-
-appWww.get('/', (req, res) => {
-  res.send("hey")
-})
+// TODO WebSocket GraphQL Subscriptions (notifying user about state changes on the chat)
 
 
 if (module.hot) {
   module.hot.accept()
-  module.hot.dispose(() => gqlServer.stop())
+  module.hot.dispose(() => {
+    gqlServer.stop()
+    appWwwServer.close()
+  })
 }

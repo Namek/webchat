@@ -20,9 +20,9 @@ import Json.Decode as Decode
 
 
 {-| -}
-newPeople : SelectionSet decodesTo Api.Object.Person -> SelectionSet (List decodesTo) Api.Object.ChatStateUpdate
-newPeople object_ =
-    Object.selectionForCompositeField "newPeople" [] object_ (identity >> Decode.list)
+people : SelectionSet decodesTo Api.Object.Person -> SelectionSet (List decodesTo) Api.Object.ChatStateUpdate
+people object_ =
+    Object.selectionForCompositeField "people" [] object_ (identity >> Decode.list)
 
 
 {-| -}

@@ -1,92 +1,53 @@
-module Request.Session exposing (SignInResult, SignOutResult, authorize)
+module Request.Session exposing (LogInResult, LogOutResult, checkAuthSession, logIn, logOut)
 
-import Api.Mutation as Mutation exposing (AuthenticateRequiredArguments)
-import Api.Object
-import Api.Object.ChatStateUpdate
-import Api.Object.Message
-import Api.Object.Person
+import Api.Mutation as Mutation exposing (LogInRequiredArguments)
 import Api.Object.SignInResult
-import Data.Chat exposing (ChatMessage, ChatStateUpdate, People, Person)
-import Data.Session exposing (Session)
+import Api.Query as Query
 import Graphql.Operation exposing (RootMutation, RootQuery)
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet, with)
 import MD5
-import Misc.Collections exposing (fromListBy)
-import Request.Common exposing (decodeDatetime)
 
 
-type alias SignInResult =
-    { chatState : ChatStateUpdate
-    , personId : Int
+type alias LogInResult =
+    { personId : Int
     , personName : String
     }
 
 
-type alias SignInInput a =
+type alias LogInInput a =
     { a | name : String, password : String }
 
 
-type alias SignOutResult =
-    { userId : Maybe Int }
+type alias LogOutResult =
+    Maybe Bool
 
 
-authorize : SignInInput a -> SelectionSet SignInResult RootMutation
-authorize credentials =
+logIn : LogInInput a -> SelectionSet LogInResult RootMutation
+logIn credentials =
     let
-        input : AuthenticateRequiredArguments
+        input : LogInRequiredArguments
         input =
             { name = credentials.name
             , passwordHash = credentials.password |> MD5.hex
             }
     in
-    Mutation.authenticate identity
+    Mutation.logIn identity
         input
-        (SelectionSet.succeed SignInResult
-            |> with (Api.Object.SignInResult.chatState decodeChatStateUpdate)
+        (SelectionSet.succeed LogInResult
             |> with Api.Object.SignInResult.personId
             |> with Api.Object.SignInResult.personName
         )
 
 
-decodeChatStateUpdate : SelectionSet ChatStateUpdate Api.Object.ChatStateUpdate
-decodeChatStateUpdate =
-    SelectionSet.succeed ChatStateUpdate
-        |> with
-            (Api.Object.ChatStateUpdate.newPeople decodePerson
-                |> SelectionSet.map (fromListBy .id)
-            )
-        |> with (Api.Object.ChatStateUpdate.newMessages decodeChatMessage)
+checkAuthSession : () -> SelectionSet (Maybe LogInResult) RootQuery
+checkAuthSession () =
+    Query.checkAuthSession
+        (SelectionSet.succeed LogInResult
+            |> with Api.Object.SignInResult.personId
+            |> with Api.Object.SignInResult.personName
+        )
 
 
-decodePerson : SelectionSet Person Api.Object.Person
-decodePerson =
-    SelectionSet.succeed Person
-        |> with Api.Object.Person.id
-        |> with Api.Object.Person.name
-        |> with Api.Object.Person.avatarSeed
-
-
-decodeChatMessage =
-    SelectionSet.succeed ChatMessage
-        |> with Api.Object.Message.id
-        |> with Api.Object.Message.content
-        |> with Api.Object.Message.authorId
-        |> with (Api.Object.Message.datetime |> SelectionSet.map decodeDatetime)
-
-
-
---checkSession : () -> SelectionSet (Maybe SignInResult) RootMutation
---checkSession () =
---    Mutation.checkSession
---        (SelectionSet.succeed Session
---            |> with CheckSessionResult.id
---            |> with CheckSessionResult.email
---            |> with CheckSessionResult.name
---        )
---
---signOut : () -> SelectionSet SignOutResult RootMutation
---signOut () =
---    Mutation.signOut
---        (SelectionSet.succeed SignOutResult
---            |> with SignOutResult.userId
---        )
+logOut : () -> SelectionSet LogOutResult RootMutation
+logOut () =
+    Mutation.logOut

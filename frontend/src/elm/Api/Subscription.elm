@@ -2,7 +2,7 @@
 -- https://github.com/dillonkearns/elm-graphql
 
 
-module Api.Object.SignInResult exposing (..)
+module Api.Subscription exposing (..)
 
 import Api.InputObject
 import Api.Interface
@@ -16,16 +16,10 @@ import Graphql.Internal.Encode as Encode exposing (Value)
 import Graphql.Operation exposing (RootMutation, RootQuery, RootSubscription)
 import Graphql.OptionalArgument exposing (OptionalArgument(..))
 import Graphql.SelectionSet exposing (SelectionSet)
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 
 
 {-| -}
-personId : SelectionSet Int Api.Object.SignInResult
-personId =
-    Object.selectionForField "Int" "personId" [] Decode.int
-
-
-{-| -}
-personName : SelectionSet String Api.Object.SignInResult
-personName =
-    Object.selectionForField "String" "personName" [] Decode.string
+chatStateUpdated : SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet decodesTo RootSubscription
+chatStateUpdated object_ =
+    Object.selectionForCompositeField "chatStateUpdated" [] object_ identity

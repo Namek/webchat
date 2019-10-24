@@ -1,6 +1,7 @@
 module Route exposing (..)
 
 import Browser.Navigation as Nav
+import Data.Chat exposing (ChatStateUpdate)
 import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)

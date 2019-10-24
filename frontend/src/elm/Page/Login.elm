@@ -3,21 +3,20 @@ module Page.Login exposing (Model, Msg, initialModel, update, view)
 import Cmd.Extra
 import Data.Context exposing (ContextData, GlobalMsg(..))
 import Data.Session exposing (Session, SessionState(..))
-import Element exposing (Element, below, column, moveDown, padding, paragraph, row, spacing, text)
+import Element exposing (Element, below, centerX, column, moveDown, padding, paragraph, row, spacing, text)
 import Element.Events exposing (onFocus, onLoseFocus)
 import Element.Font as Font
 import Element.Input as Input exposing (focusedOnLoad, placeholder)
 import Graphql.Http as Http
 import Html.Events
 import Json.Decode as Json
-import Misc exposing (attr, attrWhen, emailRegex, match, viewIf)
+import Misc exposing (attr, attrWhen, viewIf)
 import Misc.Colors as Colors
 import Misc.Ui exposing (styledButton)
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (..)
 import Request.Session exposing (..)
 import Route
-import Task
 
 
 type alias Model =
@@ -43,8 +42,8 @@ type Msg
     | OnFieldFocused Field
     | OnFieldBlurred
     | OnInFormKeyDown Int
-    | SignIn
-    | SignIn_Response (RemoteData (Http.Error SignInResult) SignInResult)
+    | LogIn
+    | LogIn_Response (RemoteData (Http.Error LogInResult) LogInResult)
 
 
 type alias Context msg =
@@ -74,28 +73,28 @@ update ctx msg =
             let
                 cmd =
                     if keyCode == 13 && isLoginFilled model then
-                        Cmd.Extra.perform SignIn
+                        Cmd.Extra.perform LogIn
 
                     else
                         Cmd.none
             in
             ( ( model, cmd ), Cmd.none )
 
-        SignIn ->
+        LogIn ->
             let
                 cmd =
-                    authorize model
-                        |> sendMutationRequest SignIn_Response
+                    logIn model
+                        |> sendMutationRequest LogIn_Response
             in
             ( ( { model | isLoading = True }, cmd ), Cmd.none )
 
-        SignIn_Response res ->
+        LogIn_Response res ->
             case res of
-                RemoteData.Success signInResult ->
+                RemoteData.Success logInResult ->
                     ( ( model, Cmd.none )
                     , Cmd.batch <|
                         List.map Cmd.Extra.perform
-                            [ SetSession (Just { id = signInResult.personId, name = signInResult.personName })
+                            [ SetSession (Just { id = logInResult.personId, name = logInResult.personName })
                             , Navigate Route.Chat
                             ]
                     )
@@ -113,13 +112,6 @@ view ctx =
         isPasswordTooShort =
             String.length model.password < minPasswordLength
 
-        shouldErrorName =
-            if String.isEmpty model.name || model.focusedField == Name then
-                False
-
-            else
-                not <| match emailRegex model.name
-
         shouldErrorPassword =
             if String.isEmpty model.password || model.focusedField == Password then
                 False
@@ -133,6 +125,7 @@ view ctx =
     column
         [ padding 25
         , spacing 25
+        , centerX
         , Element.inFront <|
             viewIf model.isLoading (paragraph [] [ text "Signing in..." ])
         ]
@@ -141,19 +134,17 @@ view ctx =
             [ text "Hi." ]
         , column [ spacing 15 ]
             [ Input.text
-                [ attr "type" "email"
-                , attr "name" "email"
+                [ attr "name" "nickname"
                 , focusedOnLoad
                 , Element.htmlAttribute <| Html.Events.on "keydown" (Json.map (ctx.lift << OnInFormKeyDown) Html.Events.keyCode)
-                , viewInputError shouldErrorName <| "Not an e-mail"
                 , onFocus (lift <| OnFieldFocused Name)
                 , onLoseFocus (lift <| OnFieldBlurred)
                 , attr "disabled" "disabled" |> attrWhen formDisabled
                 ]
                 { onChange = lift << SetName
                 , text = model.name
-                , placeholder = Just <| placeholder [] <| text "E-mail"
-                , label = Input.labelHidden "E-mail"
+                , placeholder = Just <| placeholder [] <| text "Nickname"
+                , label = Input.labelHidden "Nickname"
                 }
             , Input.currentPassword
                 [ Element.htmlAttribute <| Html.Events.on "keydown" (Json.map (ctx.lift << OnInFormKeyDown) Html.Events.keyCode)
@@ -175,8 +166,8 @@ view ctx =
                     Nothing
 
                 else
-                    Just (lift <| SignIn)
-            , label = text "Sign In"
+                    Just (lift <| LogIn)
+            , label = text "Log In"
             }
         ]
 

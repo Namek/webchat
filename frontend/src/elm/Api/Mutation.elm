@@ -19,26 +19,25 @@ import Graphql.SelectionSet exposing (SelectionSet)
 import Json.Decode as Decode exposing (Decoder)
 
 
-type alias AuthenticateOptionalArguments =
+type alias LogInOptionalArguments =
     { since : OptionalArgument Api.ScalarCodecs.Datetime }
 
 
-type alias AuthenticateRequiredArguments =
+type alias LogInRequiredArguments =
     { name : String
     , passwordHash : String
     }
 
 
-{-| Log in if account exists. Otherwise, register and log in.
-The name is unique.
+{-| Log in if account exists. Otherwise, register and log in. The name is unique.
 
   - name -
   - passwordHash -
   - since -
 
 -}
-authenticate : (AuthenticateOptionalArguments -> AuthenticateOptionalArguments) -> AuthenticateRequiredArguments -> SelectionSet decodesTo Api.Object.SignInResult -> SelectionSet decodesTo RootMutation
-authenticate fillInOptionals requiredArgs object_ =
+logIn : (LogInOptionalArguments -> LogInOptionalArguments) -> LogInRequiredArguments -> SelectionSet decodesTo Api.Object.SignInResult -> SelectionSet decodesTo RootMutation
+logIn fillInOptionals requiredArgs object_ =
     let
         filledInOptionals =
             fillInOptionals { since = Absent }
@@ -47,26 +46,27 @@ authenticate fillInOptionals requiredArgs object_ =
             [ Argument.optional "since" filledInOptionals.since (Api.ScalarCodecs.codecs |> Api.Scalar.unwrapEncoder .codecDatetime) ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "authenticate" (optionalArgs ++ [ Argument.required "name" requiredArgs.name Encode.string, Argument.required "passwordHash" requiredArgs.passwordHash Encode.string ]) object_ identity
+    Object.selectionForCompositeField "logIn" (optionalArgs ++ [ Argument.required "name" requiredArgs.name Encode.string, Argument.required "passwordHash" requiredArgs.passwordHash Encode.string ]) object_ identity
 
 
-{-| -}
+{-| Clear the HTTP Session Cookie. User no longer will be able to chat, becomes read-only.
+-}
 logOut : SelectionSet (Maybe Bool) RootMutation
 logOut =
     Object.selectionForField "(Maybe Bool)" "logOut" [] (Decode.bool |> Decode.nullable)
 
 
-type alias CreateMessageOptionalArguments =
+type alias AddMessageOptionalArguments =
     { content : OptionalArgument String }
 
 
-{-|
+{-| Write on chat.
 
   - content -
 
 -}
-createMessage : (CreateMessageOptionalArguments -> CreateMessageOptionalArguments) -> SelectionSet decodesTo Api.Object.ChatStateUpdate -> SelectionSet decodesTo RootMutation
-createMessage fillInOptionals object_ =
+addMessage : (AddMessageOptionalArguments -> AddMessageOptionalArguments) -> SelectionSet Int RootMutation
+addMessage fillInOptionals =
     let
         filledInOptionals =
             fillInOptionals { content = Absent }
@@ -75,4 +75,4 @@ createMessage fillInOptionals object_ =
             [ Argument.optional "content" filledInOptionals.content Encode.string ]
                 |> List.filterMap identity
     in
-    Object.selectionForCompositeField "createMessage" optionalArgs object_ identity
+    Object.selectionForField "Int" "addMessage" optionalArgs Decode.int

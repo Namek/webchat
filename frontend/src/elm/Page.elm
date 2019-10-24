@@ -2,11 +2,12 @@ module Page exposing (..)
 
 import Data.Context exposing (GlobalMsg)
 import Data.Session exposing (SessionState(..))
-import Element exposing (Element, centerX, column, fill, spacing, text, width)
+import Element exposing (Element, alignRight, centerX, column, fill, height, padding, spacing, text, width)
 import Misc exposing (viewIf)
 import Page.Chat
 import Page.Errored
 import Page.Login
+import Ports exposing (ConnectionStatus(..))
 
 
 type Page
@@ -16,26 +17,21 @@ type Page
     | Chat Page.Chat.Model
 
 
-type TopBarState
-    = AllOk
-    | HavingConnectionIssues
-
-
 frame : (GlobalMsg -> msg) -> Bool -> SessionState -> Page -> Element msg -> Element msg
 frame lift isLoggedIn session activePage pageContent =
     let
         content =
-            column [ width fill, spacing 10 ]
-                [ viewIf isLoggedIn <| Element.el [ centerX ] <| viewTopBar session AllOk
-                , Element.el [ centerX, width fill ] pageContent
+            column [ width fill, height fill, spacing 10 ]
+                [ viewIf isLoggedIn <| Element.el [ alignRight, padding 3 ] <| viewTopBar session Connected
+                , Element.el [ centerX, width fill, height fill ] pageContent
                 ]
     in
     Element.el
-        [ width fill ]
+        [ width fill, height fill ]
         content
 
 
-viewTopBar : SessionState -> TopBarState -> Element msg
+viewTopBar : SessionState -> ConnectionStatus -> Element msg
 viewTopBar sesionState topBarState =
     -- TODO: display some message about connection state
     case sesionState of

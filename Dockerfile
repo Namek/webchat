@@ -2,7 +2,7 @@
 ### Build
 ###
 
-FROM mcr.microsoft.com/dotnet/core/sdk:2.1 as build
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2 as build
 
 # Install NodeJS
 RUN apt-get update

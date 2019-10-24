@@ -52,7 +52,7 @@ init subInit =
     let
         session : Session
         session =
-            { id = 1, email = "some3mail@test.com", name = "User" }
+            { id = 1, name = "User" }
 
         ( subModel, subCmds ) =
             subInit session

@@ -12,24 +12,32 @@ type Person {
   avatarSeed: Int!
 }
 type ChatStateUpdate {
-  newPeople: [Person!]!
+  people: [Person!]!
   newMessages: [Message!]!
 }
 type SignInResult {
-  chatState: ChatStateUpdate!
   personId: Int!
   personName: String!
 }
 
 type Query {
   chatState(since: Datetime): ChatStateUpdate!
+
+  # Check if user's browser is already logged in (using the HTTP Cookie mechanism).
+  checkAuthSession: SignInResult
 }
 type Mutation {
-  # Log in if account exists. Otherwise, register and log in.
-  # The name is unique.
-  authenticate(name: String!, passwordHash: String!, since: Datetime): SignInResult!
+  # Log in if account exists. Otherwise, register and log in. The name is unique.
+  logIn(name: String!, passwordHash: String!, since: Datetime): SignInResult!
 
+  # Clear the HTTP Session Cookie. User no longer will be able to chat, becomes read-only.
   logOut: Boolean
 
-  createMessage(content: String): ChatStateUpdate!
+  # Write on chat.
+  addMessage(content: String): Int!
+}
+type Subscription {
+  chatStateUpdated: ChatStateUpdate!
+
+  ## TODO removed messages
 }

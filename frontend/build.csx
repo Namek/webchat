@@ -1,4 +1,4 @@
-#! "netcoreapp2.1"
+#! "netcoreapp2.2"
 
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -135,6 +135,9 @@ void buildElm()
     {
         msg += " with debug!!";
         args += " --debug";
+    }
+    else {
+        args += " --optimize";
     }
 
     log(msg);

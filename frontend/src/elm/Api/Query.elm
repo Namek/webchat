@@ -39,3 +39,10 @@ chatState fillInOptionals object_ =
                 |> List.filterMap identity
     in
     Object.selectionForCompositeField "chatState" optionalArgs object_ identity
+
+
+{-| Check if user's browser is already logged in (using the HTTP Cookie mechanism).
+-}
+checkAuthSession : SelectionSet decodesTo Api.Object.SignInResult -> SelectionSet (Maybe decodesTo) RootQuery
+checkAuthSession object_ =
+    Object.selectionForCompositeField "checkAuthSession" [] object_ (identity >> Decode.nullable)
