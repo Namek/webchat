@@ -1,0 +1,24 @@
+version: '3.2'
+
+services:
+  db:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=webchat_prod
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    build: .
+    ports:
+      - "127.0.0.1:8085:9085"
+      - "127.0.0.1:8086:9086"
+    links:
+      - "db:database"
+    depends_on:
+      - db
+    restart: always
+
+volumes:
+  pgdata:

@@ -9,7 +9,7 @@
     "start": "npm-run-all --parallel build start:server",
     "start:server": "nodemon ./dist/server.js --watch dist",
     "start:server:env": "node --require dotenv/config dist/server",
-    "gen_graphql_api": "elm-graphql http://localhost:4000/api --base Api --output ../frontend/src/elm/",
+    "gen_graphql_api": "elm-graphql http://localhost:8086/api --base Api --output ../frontend/src/elm/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
