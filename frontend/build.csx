@@ -20,6 +20,7 @@ if (Args.Count == 0)
     return 0;
 }
 
+log($"Output dir: {outputDir}");
 
 if (!Directory.Exists(srcDir))
 {
@@ -178,7 +179,8 @@ void copyStatics()
 void copyStatic(string filePath, string logPrefix = "Copying ")
 {
     var dir = Path.GetDirectoryName(filePath);
-    var shortPath = filePath.Replace(staticsFolder, "").TrimStart('\\').TrimStart('/');
+
+    var shortPath = filePath.Replace('/', '\\').Replace(staticsFolder, "").TrimStart('\\');
     var finalPath = Path.Combine(outputDir, shortPath);
     var finalPathDir = Path.GetDirectoryName(finalPath);
 
