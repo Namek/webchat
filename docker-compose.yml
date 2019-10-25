@@ -2,10 +2,10 @@ version: '3.2'
 
 services:
   db:
-    image: postgres:9.6
+    image: postgres:10.0
     environment:
       - PGHOST=database
-      - PGDATABASE=webchat_prod
+      - PGDATABASE=postgres
       - PGPORT=5432
       - PGUSER=postgres
       - PGPASSWORD=postgres
@@ -15,7 +15,7 @@ services:
   web:
     build: .
     ports:
-      - "127.0.0.1:8085:9085"
+      - "8085:8085"
     links:
       - "db:database"
     depends_on:

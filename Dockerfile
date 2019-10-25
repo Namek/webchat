@@ -12,8 +12,8 @@ RUN apt-get install -y nodejs
 
 # Install elm and dotnet-script
 WORKDIR /bin
-RUN curl -sL https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz --output elm.tar.gz && \
-    tar -xzf elm.tar.gz && rm elm.tar.gz && \
+RUN curl -sL https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz --output elm.gz && \
+    gunzip elm.gz && chmod +x elm && \
     dotnet tool install -g dotnet-script && \
     ln -sfn /root/.dotnet/tools/dotnet-script /bin/dotnet-script
 
@@ -27,9 +27,8 @@ RUN NODE_ENV=production npm run build
 
 # Build: Frontend
 WORKDIR /frontend/
-COPY frontend/src/ ./src
-COPY frontend/build.csx ./
-RUN  dotnet script build.csx build
+COPY frontend/ ./
+RUN  dotnet script build.csx build && ls /frontend && ls /frontend/public
 
 
 ########################
@@ -39,9 +38,10 @@ RUN  dotnet script build.csx build
 FROM node:12-buster as runtime
 WORKDIR /app
 
-COPY --from=build /backend/dist ./
+COPY --from=build /backend ./
 COPY --from=build /frontend/public ./public
 
 
 EXPOSE 8085
-ENTRYPOINT [ "NODE_ENV=production node /app/server.js" ]
+ENV NODE_ENV production
+CMD [ "node", "/app/dist/server.js" ]

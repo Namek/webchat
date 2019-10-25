@@ -3,9 +3,10 @@ import dbSqlCodeForInit from "!!raw-loader!./db_init.sql"
 
 export async function queryDb(query: string, values: any[] = []) {
   const client = new pg.Client({
+    host: process.env.PGHOST || 'database',
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
-    database: process.env.PGDATABASE || 'webchat_prod',
+    database: process.env.PGDATABASE || 'postgres',
     port: +(process.env.PGPORT || 5432)
   })
   await client.connect()

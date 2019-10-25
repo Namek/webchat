@@ -180,7 +180,7 @@ void copyStatic(string filePath, string logPrefix = "Copying ")
 {
     var dir = Path.GetDirectoryName(filePath);
 
-    var shortPath = filePath.Replace('/', '\\').Replace(staticsFolder, "").TrimStart('\\');
+    var shortPath = filePath.Replace('\\', '/').Replace(staticsFolder.Replace('\\', '/'), "").TrimStart('/');
     var finalPath = Path.Combine(outputDir, shortPath);
     var finalPathDir = Path.GetDirectoryName(finalPath);
 

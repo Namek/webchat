@@ -6,10 +6,10 @@
 
 1. Boot it up with [docker-compose](https://docs.docker.com/compose/install/)
 
-    docker-compose build
-    docker-compose up
+       docker-compose build
+       docker-compose up
 
-2. Open [http://localhost:9085](http://localhost:9085) in your browser.
+2. Open [http://localhost:8085](http://localhost:8085) in your browser.
 
 ## Features
 
@@ -25,11 +25,12 @@
 
 - Secure HTTP
 - database migrations
-- bundling frontend JS code into one file
+- frontend: bundle JS code into one file
 - backend: [detecting and closing broken connections](https://github.com/websockets/ws#how-to-detect-and-close-broken-connections)
 - backend: store session not in-memory but in database so server restart wouldn't log out users
 - frontend UX: better indications about connection status
-
+- timezones need some care
+- build: reduce size of Docker downloads
 
 
 # Development

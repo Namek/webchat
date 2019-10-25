@@ -74,7 +74,7 @@ gqlServer.installSubscriptionHandlers(httpServer)
 
 
 initDatabaseIfNeeded().then(res => {
-  httpServer.listen(environment.port, () => {
+  httpServer.listen(environment.port, environment.host, () => {
     console.log(`🚀 WWW server ready at http://localhost/${environment.port}`)
     console.log(`🚀 Subscriptions ready at ws://localhost:${environment.port}${gqlServer.subscriptionsPath}`)
   })

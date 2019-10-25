@@ -1,4 +1,5 @@
 backend/node_modules
 backend/dist
 frontend/src/elm-stuff
+frontend/public
 .idea
