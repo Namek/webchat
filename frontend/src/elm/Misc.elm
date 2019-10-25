@@ -137,3 +137,9 @@ emailRegex : Regex
 emailRegex =
     Regex.fromString ".{3,}@.{2,}"
         |> Maybe.withDefault Regex.never
+
+
+urlRegex : Regex
+urlRegex =
+    Regex.fromString "https?:\\/\\/[^\\s]+"
+        |> Maybe.withDefault Regex.never

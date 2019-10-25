@@ -1,19 +1,20 @@
 module Page.Chat exposing (..)
 
 import Cmd.Extra
-import Data.Chat exposing (ChatMessage, ChatStateUpdate, People, Person, PersonId, minutesToPassToGroupMessage, personName)
+import Data.Chat exposing (ChatMessage, ChatStateUpdate, MessageId, People, Person, PersonId, minutesToPassToGroupMessage, personName)
 import Data.Context exposing (ContextData, GlobalMsg, Logged, MaybeLogged)
 import Data.Session exposing (Session)
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, clip, column, el, fill, height, link, maximum, padding, paddingEach, px, row, scrollbarY, spacing, spacingXY, text, width)
+import Element exposing (Element, alignBottom, alignTop, centerX, clip, column, el, fill, height, link, maximum, newTabLink, padding, paddingEach, px, row, scrollbarY, spacing, spacingXY, text, width)
 import Element.Font as Font exposing (Font)
 import Element.Input as Input exposing (labelHidden)
 import Graphql.Http
 import Html.Events
 import Json.Decode as Json
 import List.Extra
-import Misc exposing (css, edges, noCmd, performMsgWithDelay, timeRelativeString)
+import Misc exposing (css, edges, emailRegex, match, noCmd, performMsgWithDelay, timeRelativeString, urlRegex)
 import Misc.Colors as Colors
+import Regex exposing (Regex)
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (sendMutationRequest, sendQueryRequest)
 import Request.Message exposing (addMessage, getChatState)
@@ -63,7 +64,22 @@ type alias ChatMessages =
 
 
 type alias AuthorMessages =
-    { authorId : PersonId, authorName : String, messages : List ChatMessage }
+    { authorId : PersonId, authorName : String, messages : List RenderedChatMessage }
+
+
+type alias RenderedChatMessage =
+    { id : MessageId
+    , content : List MessagePart
+    , authorId : PersonId
+
+    -- UTC time
+    , datetime : Time.Posix
+    }
+
+
+type MessagePart
+    = MsgText String
+    | MsgLink String
 
 
 countMessages : ChatMessages -> Int
@@ -189,12 +205,89 @@ mergeUpdateToChatState currentState theUpdate =
             }
 
 
+parseMessageContent : String -> List MessagePart
+parseMessageContent content =
+    let
+        placesOfLinks =
+            Regex.find urlRegex content
+                |> List.map
+                    (\match ->
+                        ( ( match.index, String.length match.match ), MsgLink match.match )
+                    )
+                |> List.sortBy (\( ( index, length ), msgLink ) -> index)
+
+        links : List MessagePart
+        links =
+            placesOfLinks
+                |> List.map (\( ( index, length ), msgLink ) -> msgLink)
+
+        texts : List MessagePart
+        texts =
+            Regex.split urlRegex content
+                |> List.map MsgText
+
+        zip =
+            List.map2 (\a b -> [ a, b ])
+
+        contentStartsWithLink =
+            case placesOfLinks of
+                ( ( index, _ ), _ ) :: _ ->
+                    index == 0
+
+                _ ->
+                    False
+
+        linksAndTextsZippedBack =
+            -- we need a fix around List.map2 which drops last element if list lenghts are unequal
+            let
+                linksLen =
+                    List.length links
+
+                textsLen =
+                    List.length texts
+
+                links2 =
+                    if linksLen < textsLen then
+                        List.append links [ MsgText "" ]
+
+                    else
+                        links
+
+                texts2 =
+                    if linksLen > textsLen then
+                        List.append texts [ MsgText "" ]
+
+                    else
+                        texts
+            in
+            if contentStartsWithLink then
+                zip links2 texts2
+
+            else
+                zip texts2 links2
+    in
+    linksAndTextsZippedBack |> List.concat
+
+
 {-| Assumption:
 New messages are always put into the end of old state. New messages should be sorted by datetime ASC.
 The only matter to solve is whether a new message group should be created or not.
 -}
 insertAndGroupMessages : People -> ChatMessages -> List ChatMessage -> ChatMessages
 insertAndGroupMessages people oldState newMessages =
+    let
+        newMessagesParsed : List RenderedChatMessage
+        newMessagesParsed =
+            newMessages
+                |> List.map
+                    (\msg ->
+                        { id = msg.id
+                        , authorId = msg.authorId
+                        , datetime = msg.datetime
+                        , content = parseMessageContent msg.content
+                        }
+                    )
+    in
     List.foldl
         (\newMsg messageGroups ->
             let
@@ -239,7 +332,7 @@ insertAndGroupMessages people oldState newMessages =
                     List.append messageGroups [ newGroup ]
         )
         oldState
-        newMessages
+        newMessagesParsed
 
 
 
@@ -307,7 +400,7 @@ view ctx =
 renderMessageGroup : Time.Posix -> Time.Zone -> People -> AuthorMessages -> Element msg
 renderMessageGroup time timezone people messageGroup =
     row [ width fill, spacing 20 ]
-        [ el [ alignTop ] <| text "<AVATAR>"
+        [ el [ alignTop ] <| text ""
         , column [ alignTop, spacing 7 ]
             (renderGroupHeader time timezone messageGroup
                 :: (messageGroup.messages |> List.map renderMessage)
@@ -343,9 +436,19 @@ renderGroupHeader time timezone messageGroup =
         ]
 
 
-renderMessage : ChatMessage -> Element msg
+renderMessage : RenderedChatMessage -> Element msg
 renderMessage msg =
-    text msg.content
+    let
+        renderPart : MessagePart -> Element msg
+        renderPart part =
+            case part of
+                MsgText string ->
+                    text string
+
+                MsgLink string ->
+                    newTabLink [ Font.color Colors.blue500 ] { url = string, label = text string }
+    in
+    msg.content |> List.map renderPart |> row []
 
 
 renderChatInput : Context msg -> Element msg
