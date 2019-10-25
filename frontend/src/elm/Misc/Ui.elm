@@ -6,7 +6,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Misc exposing (either)
-import Misc.Colors exposing (teal100, teal700, white)
+import Misc.Colors as Colors exposing (white)
 
 
 styledButton : List (Element.Attribute msg) -> { onPress : Maybe msg, label : Element msg } -> Element msg
@@ -20,7 +20,7 @@ styledButton attrs opts =
 
         allAttrs =
             List.append
-                [ enabled |> either teal700 teal100 |> Bg.color
+                [ enabled |> either Colors.blue700 Colors.blue100 |> Bg.color
                 , enabled |> either defaultShadow noShadow
                 , Font.color white
                 , Font.size 14
