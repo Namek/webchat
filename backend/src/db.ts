@@ -3,7 +3,7 @@ import dbSqlCodeForInit from "!!raw-loader!./db_init.sql"
 
 export async function queryDb(query: string, values: any[] = []) {
   const client = new pg.Client({
-    host: process.env.PGHOST || 'database',
+    host: process.env.PGHOST || 'localhost',
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
     database: process.env.PGDATABASE || 'postgres',

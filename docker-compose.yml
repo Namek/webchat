@@ -3,16 +3,16 @@ version: '3.2'
 services:
   db:
     image: postgres:10.0
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
     environment:
       - PGHOST=database
       - PGDATABASE=postgres
       - PGPORT=5432
       - PGUSER=postgres
       - PGPASSWORD=postgres
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  web:
     build: .
     ports:
       - "8085:8085"
