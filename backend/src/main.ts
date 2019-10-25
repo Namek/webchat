@@ -64,7 +64,7 @@ const gqlServer = new ApolloServer({
       console.log('subscription connect', connectionParams)
     },
     onDisconnect: (socket: WebSocket, context: ConnectionContext) => {
-      console.log('disconnected')
+      console.log('subscription disconnect')
     }
   }
 })

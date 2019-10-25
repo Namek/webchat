@@ -9,10 +9,11 @@ const CHAT_STATE_UPDATED = 'chatStateUpdated'
 export default (state: AppState) => {
   const Query: ApiQuery = {
     chatState: async (root: any, { since }: any) => {
+      const people = await state.repo.getPeople()
       const messages = await state.repo.getMessages(since)
 
       const chatState: ChatStateUpdate = {
-        people: state.repo.getPeople(),
+        people,
         newMessages: messages
       }
 
@@ -36,10 +37,10 @@ export default (state: AppState) => {
   }
 
   const Mutation: ApiMutation = {
-    logIn: (root, { name, passwordHash }, ctx) => {
-      const person = state.repo.checkUserCredentialsOrCreateUser(name, passwordHash)
+    logIn: async (root, { name, passwordHash }, ctx) => {
+      const person = await state.repo.checkUserCredentialsOrCreateUser(name, passwordHash)
 
-      if (!person) {
+      if (person == null) {
         throw new Error("You have passed wrong credentials.")
       }
 
@@ -105,7 +106,7 @@ export default (state: AppState) => {
         return null
       }
     }),
-    Query,
+    Query: Query as any,
     Mutation: Mutation as any, //Note: Either I or a compiler was sick that day.
     Subscription: {
       chatStateUpdated: {
