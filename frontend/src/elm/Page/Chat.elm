@@ -6,7 +6,7 @@ import Data.Chat exposing (ChatMessage, ChatStateUpdate, MessageId, People, Pers
 import Data.Context exposing (ContextData, GlobalMsg, Logged, MaybeLogged)
 import Data.Session exposing (Session)
 import Dict
-import Element exposing (Element, alignBottom, alignTop, centerX, clip, column, el, fill, height, link, maximum, newTabLink, padding, paddingEach, px, row, scrollbarY, spacing, spacingXY, text, width)
+import Element exposing (Element, alignBottom, alignTop, centerX, clip, column, el, fill, height, link, maximum, newTabLink, padding, paddingEach, px, row, scrollbarY, spacing, spacingXY, text, width, wrappedRow)
 import Element.Font as Font exposing (Font)
 import Element.Input as Input exposing (labelHidden)
 import Graphql.Http
@@ -420,7 +420,7 @@ renderMessageGroup : Time.Posix -> Time.Zone -> People -> AuthorMessages -> Elem
 renderMessageGroup time timezone people messageGroup =
     row [ width fill, spacing 20 ]
         [ el [ alignTop ] <| text ""
-        , column [ alignTop, spacing 7 ]
+        , column [ width fill, alignTop, spacing 7 ]
             (renderGroupHeader time timezone messageGroup
                 :: (messageGroup.messages |> List.map renderMessage)
             )
@@ -467,7 +467,7 @@ renderMessage msg =
                 MsgLink string ->
                     newTabLink [ Font.color Colors.blue500 ] { url = string, label = text string }
     in
-    msg.content |> List.map renderPart |> row []
+    msg.content |> List.map renderPart |> wrappedRow []
 
 
 renderChatInput : Context msg -> Element msg
