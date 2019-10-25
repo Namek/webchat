@@ -16,13 +16,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/pg": "^7.11.2",
     "apollo-server-express": "^2.9.6",
     "crypto": "^1.0.1",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
     "graphql": "^14.5.8",
     "graphql-import": "^0.7.1",
-    "graphql-subscriptions": "^1.1.0"
+    "graphql-subscriptions": "^1.1.0",
+    "pg": "^7.12.1"
   },
   "devDependencies": {
     "@dillonkearns/elm-graphql": "^3.6.2",

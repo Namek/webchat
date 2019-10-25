@@ -4,8 +4,11 @@ services:
   db:
     image: postgres:9.6
     environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=webchat_prod
+      - PGHOST=database
+      - PGDATABASE=webchat_prod
+      - PGPORT=5432
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
 

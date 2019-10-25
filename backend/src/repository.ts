@@ -1,5 +1,7 @@
-import { ChatStateUpdate, Message, Person } from './api_types'
 import crypto from 'crypto'
+import { ChatStateUpdate, Message, Person } from './api_types'
+import { queryDb } from './db'
+
 
 const hashMd5 = (text: string) => crypto.createHash('md5').update(text).digest("hex")
 const SECRET_SALT = "32523ter21"
@@ -8,44 +10,50 @@ const SECRET_SALT = "32523ter21"
 // TODO temporary until database is implemented
 const TMP_SUCCESS_PASSWORD = hashMd5(hashMd5("hithere") + SECRET_SALT)
 
-function encryptPassword(password: string, key: string): string {
-  // TODO encrypt with sha1 or sth
-  return password + key
-}
 
 export default class Repository {
-  private lastMessageId: number = 0
   private lastPersonId: number = 0
 
   // TODO these are temporary collections, normally there would be database
-  messages: Array<Message> = []
   people: Array<Person> = []
 
-  checkAuthSession(authToken: string): Person | null {
-    // TODO
-    return null
-  }
 
-  getMessages(since?: Date): Array<Message> {
-    return this.messages
+  async getMessages(since?: Date): Promise<Array<Message>> {
+    // TODO support `since`
+    return queryDb("SELECT * FROM messages")
+      .then(res => res.rows.map(row =>
+        ({
+          id: row.id,
+          authorId: row.author_id,
+          content: row.content,
+          datetime: new Date(row.datetime)
+        } as Message)
+      ))
   }
 
   getPeople(): Array<Person> {
     return this.people
   }
 
-  addMessage(authorId: number, content: string): Message {
-    let id = ++this.lastMessageId
-
+  async addMessage(authorId: number, content: string): Promise<Message> {
     // TODO queue removing messages over limit
 
     const message: Message = {
-      id,
       authorId,
       datetime: new Date(),
       content: content
     }
-    this.messages.push(message)
+
+    const res = await queryDb(`
+      INSERT INTO messages (content, author_id, datetime)
+      VALUES ($1, $2, to_timestamp($3)) RETURNING id
+    `, [
+      message.content,
+      message.authorId,
+      message.datetime!.getTime() / 1000
+    ])
+
+    message.id = res.rows[0].id
 
     return message
   }

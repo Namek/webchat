@@ -14,13 +14,13 @@ export interface ChatStateUpdate {
   newMessages?: Array<Message>
 }
 export interface ApiQuery {
-  chatState: (since: Date) => ChatStateUpdate
-  checkAuthSession: () => Person | null
+  chatState: (root: any, {since: Date}: any, ctx: ApiContext) => Promise<ChatStateUpdate>
+  checkAuthSession: (root: any, input: any, ctx: ApiContext) => Person | null
 }
 export interface ApiMutation {
   logIn: (root: any, input: { name: string, passwordHash: string }, ctx: ApiContext) => Person
   logOut: (root: any, input: any, ctx: ApiContext) => null
-  addMessage: (root: any, input: { content: string }, ctx: ApiContext) => number
+  addMessage: (root: any, input: { content: string }, ctx: ApiContext) => Promise<number>
 }
 export interface ApiContext {
   sessionID: string

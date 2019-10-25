@@ -10,6 +10,8 @@ import ChatApi from './api'
 import { AppState } from './state'
 import Repository from './repository'
 import { ApiContext } from './api_types'
+import { initDatabaseIfNeeded } from './db'
+
 
 
 const state: AppState = {
@@ -70,13 +72,13 @@ const gqlServer = new ApolloServer({
 gqlServer.applyMiddleware({ app: app, path: '/api' })
 gqlServer.installSubscriptionHandlers(httpServer)
 
-httpServer.listen(environment.port, () => {
-  console.log(`🚀 WWW server ready at http://localhost/${environment.port}`)
-  console.log(`🚀 Subscriptions ready at ws://localhost:${environment.port}${gqlServer.subscriptionsPath}`)
+
+initDatabaseIfNeeded().then(res => {
+  httpServer.listen(environment.port, () => {
+    console.log(`🚀 WWW server ready at http://localhost/${environment.port}`)
+    console.log(`🚀 Subscriptions ready at ws://localhost:${environment.port}${gqlServer.subscriptionsPath}`)
+  })
 })
-
-
-// TODO WebSocket GraphQL Subscriptions (notifying user about state changes on the chat)
 
 
 if (module.hot) {

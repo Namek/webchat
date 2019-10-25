@@ -1,22 +1,24 @@
 import { GraphQLScalarType, Kind } from "graphql"
 import { withFilter } from 'graphql-subscriptions'
 import typeDefs from "!!raw-loader!./api.graphql"
-import { ChatStateUpdate, Message, Person, ApiMutation } from './api_types'
+import { ChatStateUpdate, Message, Person, ApiMutation, ApiQuery } from './api_types'
 import { AppState, User } from './state'
 
 const CHAT_STATE_UPDATED = 'chatStateUpdated'
 
 export default (state: AppState) => {
-  const Query/*: ApiQuery*/ = {
-    chatState: (root: any, { since }: any) => {
+  const Query: ApiQuery = {
+    chatState: async (root: any, { since }: any) => {
+      const messages = await state.repo.getMessages(since)
+
       const chatState: ChatStateUpdate = {
         people: state.repo.getPeople(),
-        newMessages: state.repo.getMessages(since)
+        newMessages: messages
       }
 
       return chatState
     },
-    checkAuthSession: (root: any, input: any, ctx: any) => {
+    checkAuthSession: (root, input, ctx) => {
       let user = state.userSessions.find(u => u.cookieSessionId == ctx.sessionID)
 
       if (!user) {
@@ -62,7 +64,7 @@ export default (state: AppState) => {
       ctx.session.destroy(() => { })
       return null
     },
-    addMessage: (root, { content }, ctx) => {
+    addMessage: async (root, { content }, ctx) => {
       console.log(`New message: ${content}`)
 
       // find out if this user is authorized, otherwise he can't post messages
@@ -73,7 +75,7 @@ export default (state: AppState) => {
       }
 
       let personId = user.id
-      const message = state.repo.addMessage(personId, content)
+      const message = await state.repo.addMessage(personId, content)
 
       const chatStateUpdated: ChatStateUpdate = {
         people: [],
