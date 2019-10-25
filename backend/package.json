@@ -17,13 +17,16 @@
   "license": "ISC",
   "dependencies": {
     "apollo-server-express": "^2.9.6",
+    "crypto": "^1.0.1",
     "express": "^4.17.1",
+    "express-session": "^1.17.0",
     "graphql": "^14.5.8",
     "graphql-import": "^0.7.1",
     "graphql-subscriptions": "^1.1.0"
   },
   "devDependencies": {
     "@dillonkearns/elm-graphql": "^3.6.2",
+    "@types/express-session": "^1.15.15",
     "@types/node": "^12.11.1",
     "@types/webpack-env": "^1.14.1",
     "babel-cli": "^6.26.0",

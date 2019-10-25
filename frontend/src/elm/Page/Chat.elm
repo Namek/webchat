@@ -2,11 +2,11 @@ module Page.Chat exposing (..)
 
 import Cmd.Extra
 import Data.Chat exposing (ChatMessage, ChatStateUpdate, People, Person, PersonId, minutesToPassToGroupMessage, personName)
-import Data.Context exposing (ContextData, GlobalMsg, Logged)
+import Data.Context exposing (ContextData, GlobalMsg, Logged, MaybeLogged)
 import Data.Session exposing (Session)
 import Dict
-import Element exposing (Element, alignBottom, alignTop, clip, column, el, fill, height, maximum, padding, paddingEach, px, row, scrollbarY, spacing, spacingXY, text, width)
-import Element.Font as Font
+import Element exposing (Element, alignBottom, alignTop, centerX, clip, column, el, fill, height, link, maximum, padding, paddingEach, px, row, scrollbarY, spacing, spacingXY, text, width)
+import Element.Font as Font exposing (Font)
 import Element.Input as Input exposing (labelHidden)
 import Graphql.Http
 import Html.Events
@@ -17,6 +17,7 @@ import Misc.Colors as Colors
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (sendMutationRequest, sendQueryRequest)
 import Request.Message exposing (addMessage, getChatState)
+import Route
 import Time
 import Time.Extra exposing (Interval(..), posixToParts)
 
@@ -35,7 +36,7 @@ type alias ChatState =
     }
 
 
-init : Session -> ( Model, Cmd Msg )
+init : Maybe Session -> ( Model, Cmd Msg )
 init session =
     let
         model =
@@ -52,7 +53,7 @@ receiveChatStateUpdate model chatStateUpdate =
 
 
 type alias Context msg =
-    Logged (ContextData Model Msg msg)
+    MaybeLogged (ContextData Model Msg msg)
 
 
 {-| Chat Messages: Chronologically grouped by authors
@@ -65,8 +66,8 @@ type alias AuthorMessages =
     { authorId : PersonId, authorName : String, messages : List ChatMessage }
 
 
-messageCount : ChatMessages -> Int
-messageCount =
+countMessages : ChatMessages -> Int
+countMessages =
     List.foldl (\msgs acc -> acc + List.length msgs.messages) 0
 
 
@@ -120,7 +121,7 @@ update { model } msg =
                     -- send message to the backend on ENTER key
                     if keyCode == 13 then
                         if (String.length <| String.trim model.inputText) > 0 then
-                            ( { model | inputText = "" }
+                            ( model
                             , Cmd.Extra.perform <| SendMessage model.inputText
                             )
 
@@ -139,6 +140,9 @@ update { model } msg =
                         |> sendMutationRequest SendMessage_Response
             in
             model |> Cmd.Extra.with mutationCmd |> noCmd
+
+        SendMessage_Response (RemoteData.Success _) ->
+            { model | inputText = "" } |> noCmd |> noCmd
 
         SendMessage_Response _ ->
             model |> noCmd |> noCmd
@@ -253,6 +257,28 @@ view ctx =
             let
                 groupedMsgs =
                     chatState.messages
+
+                renderMessages =
+                    case countMessages groupedMsgs of
+                        0 ->
+                            [ column [ centerX, paddingEach { edges | top = 20 } ]
+                                [ text "Nothing's going on here. Invite your friends in your real life to chat here!"
+                                , if ctx.session == Data.Session.GuestSession then
+                                    row [ Font.size 25, paddingEach { edges | top = 40 }, centerX ]
+                                        [ link []
+                                            { url = Route.routeToString Route.Login
+                                            , label = el [ Font.color Colors.blue500 ] <| text "Log in"
+                                            }
+                                        , text " to chat"
+                                        ]
+
+                                  else
+                                    Element.none
+                                ]
+                            ]
+
+                        _ ->
+                            groupedMsgs |> List.map (renderMessageGroup time timezone chatState.people)
             in
             column
                 [ width fill
@@ -270,12 +296,12 @@ view ctx =
                     , scrollbarY
                     ]
                   <|
-                    (groupedMsgs |> List.map (renderMessageGroup time timezone chatState.people))
+                    renderMessages
                 , renderChatInput ctx
                 ]
 
         Nothing ->
-            text "Loading..."
+            el [ centerX ] <| text "Loading..."
 
 
 renderMessageGroup : Time.Posix -> Time.Zone -> People -> AuthorMessages -> Element msg
@@ -324,12 +350,35 @@ renderMessage msg =
 
 renderChatInput : Context msg -> Element msg
 renderChatInput ctx =
-    Input.text
-        [ Element.htmlAttribute <| Html.Events.on "keydown" (Json.map (ctx.lift << OnInputTextKeyDown) Html.Events.keyCode)
-        , alignBottom
-        ]
-        { onChange = SetInputText >> ctx.lift
-        , text = ctx.model.inputText
-        , label = labelHidden "Write on chat"
-        , placeholder = Just <| Input.placeholder [] (text "Write on chat")
-        }
+    case ctx.session of
+        Data.Session.LoggedSession session ->
+            Input.text
+                [ Element.htmlAttribute <| Html.Events.on "keydown" (Json.map (ctx.lift << OnInputTextKeyDown) Html.Events.keyCode)
+                , alignBottom
+                ]
+                { onChange = SetInputText >> ctx.lift
+                , text = ctx.model.inputText
+                , label = labelHidden "Write on chat"
+                , placeholder = Just <| Input.placeholder [] (text "Write on chat")
+                }
+
+        Data.Session.GuestSession ->
+            let
+                messageCount =
+                    ctx.model.chatState
+                        |> Maybe.map (\s -> s.messages |> countMessages)
+                        |> Maybe.withDefault 0
+            in
+            row [] <|
+                case messageCount of
+                    0 ->
+                        -- the "Log in" link is displayed on the top, centered
+                        []
+
+                    _ ->
+                        [ link []
+                            { url = Route.routeToString Route.Login
+                            , label = el [ Font.color Colors.blue500 ] <| text "Log in"
+                            }
+                        , text " to chat"
+                        ]

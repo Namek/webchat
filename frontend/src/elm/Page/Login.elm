@@ -3,14 +3,14 @@ module Page.Login exposing (Model, Msg, initialModel, update, view)
 import Cmd.Extra
 import Data.Context exposing (ContextData, GlobalMsg(..))
 import Data.Session exposing (Session, SessionState(..))
-import Element exposing (Element, below, centerX, column, moveDown, padding, paragraph, row, spacing, text)
+import Element exposing (Element, alignRight, below, centerX, column, el, fill, link, moveDown, padding, paddingEach, paragraph, row, spacing, text, width)
 import Element.Events exposing (onFocus, onLoseFocus)
 import Element.Font as Font
 import Element.Input as Input exposing (focusedOnLoad, placeholder)
 import Graphql.Http as Http
 import Html.Events
 import Json.Decode as Json
-import Misc exposing (attr, attrWhen, viewIf)
+import Misc exposing (attr, attrWhen, edges, viewIf)
 import Misc.Colors as Colors
 import Misc.Ui exposing (styledButton)
 import RemoteData exposing (RemoteData)
@@ -131,7 +131,7 @@ view ctx =
         ]
         [ paragraph
             [ Font.size 20 ]
-            [ text "Hi." ]
+            [ text "Hi. Log in or register." ]
         , column [ spacing 15 ]
             [ Input.text
                 [ attr "name" "nickname"
@@ -160,15 +160,29 @@ view ctx =
                 , show = False
                 }
             ]
-        , styledButton [ Font.size 20 ]
-            { onPress =
-                if (not <| isLoginFilled model) || formDisabled then
-                    Nothing
+        , row [ width fill ]
+            [ link []
+                { url = Route.routeToString Route.Chat
+                , label =
+                    styledButton [ Font.size 20 ]
+                        { onPress = Nothing
+                        , label = text "↶ Cancel"
+                        }
+                }
+            , styledButton [ Font.size 20, alignRight ]
+                { onPress =
+                    if (not <| isLoginFilled model) || formDisabled then
+                        Nothing
 
-                else
-                    Just (lift <| LogIn)
-            , label = text "Log In"
-            }
+                    else
+                        Just (lift <| LogIn)
+                , label =
+                    row []
+                        [ text "Log In"
+                        , el [ Font.size 15, paddingEach { edges | left = 5 } ] <| text "👍"
+                        ]
+                }
+            ]
         ]
 
 

@@ -29,7 +29,6 @@ graphQlApiUrl =
 sendQueryRequest : (RemoteData (Http.Error response) response -> msg) -> SelectionSet response RootQuery -> Cmd msg
 sendQueryRequest dataHandlerMsg query =
     query
-        -- TODO replace HTTP with WebSocket
         |> Http.queryRequest graphQlApiUrl
         |> Http.send (RemoteData.fromResult >> dataHandlerMsg)
 

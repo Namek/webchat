@@ -1,6 +1,7 @@
 module Data.Session exposing
     ( Session
     , SessionState(..)
+    , unpackSession
     )
 
 import Json.Decode as Decode exposing (Decoder)
@@ -19,3 +20,13 @@ type alias Session =
 type SessionState
     = LoggedSession Session
     | GuestSession
+
+
+unpackSession : SessionState -> Maybe Session
+unpackSession state =
+    case state of
+        LoggedSession session ->
+            Just session
+
+        GuestSession ->
+            Nothing

@@ -15,20 +15,16 @@ type ChatStateUpdate {
   people: [Person!]!
   newMessages: [Message!]!
 }
-type SignInResult {
-  personId: Int!
-  personName: String!
-}
 
 type Query {
   chatState(since: Datetime): ChatStateUpdate!
 
   # Check if user's browser is already logged in (using the HTTP Cookie mechanism).
-  checkAuthSession: SignInResult
+  checkAuthSession: Person
 }
 type Mutation {
   # Log in if account exists. Otherwise, register and log in. The name is unique.
-  logIn(name: String!, passwordHash: String!, since: Datetime): SignInResult!
+  logIn(name: String!, passwordHash: String!): Person!
 
   # Clear the HTTP Session Cookie. User no longer will be able to chat, becomes read-only.
   logOut: Boolean

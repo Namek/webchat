@@ -19,10 +19,6 @@ import Graphql.SelectionSet exposing (SelectionSet)
 import Json.Decode as Decode exposing (Decoder)
 
 
-type alias LogInOptionalArguments =
-    { since : OptionalArgument Api.ScalarCodecs.Datetime }
-
-
 type alias LogInRequiredArguments =
     { name : String
     , passwordHash : String
@@ -33,20 +29,11 @@ type alias LogInRequiredArguments =
 
   - name -
   - passwordHash -
-  - since -
 
 -}
-logIn : (LogInOptionalArguments -> LogInOptionalArguments) -> LogInRequiredArguments -> SelectionSet decodesTo Api.Object.SignInResult -> SelectionSet decodesTo RootMutation
-logIn fillInOptionals requiredArgs object_ =
-    let
-        filledInOptionals =
-            fillInOptionals { since = Absent }
-
-        optionalArgs =
-            [ Argument.optional "since" filledInOptionals.since (Api.ScalarCodecs.codecs |> Api.Scalar.unwrapEncoder .codecDatetime) ]
-                |> List.filterMap identity
-    in
-    Object.selectionForCompositeField "logIn" (optionalArgs ++ [ Argument.required "name" requiredArgs.name Encode.string, Argument.required "passwordHash" requiredArgs.passwordHash Encode.string ]) object_ identity
+logIn : LogInRequiredArguments -> SelectionSet decodesTo Api.Object.Person -> SelectionSet decodesTo RootMutation
+logIn requiredArgs object_ =
+    Object.selectionForCompositeField "logIn" [ Argument.required "name" requiredArgs.name Encode.string, Argument.required "passwordHash" requiredArgs.passwordHash Encode.string ] object_ identity
 
 
 {-| Clear the HTTP Session Cookie. User no longer will be able to chat, becomes read-only.

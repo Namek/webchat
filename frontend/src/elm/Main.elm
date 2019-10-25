@@ -5,7 +5,7 @@ import Browser.Navigation as Nav
 import Cmd.Extra
 import Data.Chat exposing (ChatStateUpdate)
 import Data.Context exposing (GlobalMsg(..))
-import Data.Session exposing (Session, SessionState(..))
+import Data.Session exposing (Session, SessionState(..), unpackSession)
 import Element exposing (Element, paragraph, text)
 import Graphql.Document
 import Graphql.Http
@@ -125,15 +125,6 @@ viewPage model page =
         frame =
             Page.frame HandleGlobalMsg isLoggedIn model.session
 
-        getAuthorizedSession =
-            \() ->
-                case model.session of
-                    LoggedSession session ->
-                        session
-
-                    _ ->
-                        Debug.todo "you have to be authorized!"
-
         pageView =
             case page of
                 Blank ->
@@ -156,7 +147,7 @@ viewPage model page =
                         , lift = ChatMsg
                         , time = model.time
                         , timezone = model.timezone
-                        , session = getAuthorizedSession ()
+                        , session = model.session
                         }
     in
     frame page pageView
@@ -213,7 +204,7 @@ update msg model =
             { model | connectionStatus = status } |> noCmd
 
         GotWebSocketData data ->
-            case Json.Decode.decodeValue (sub_chatStateUpdate |> Graphql.Document.decoder) (Debug.log "data" data) of
+            case Json.Decode.decodeValue (sub_chatStateUpdate |> Graphql.Document.decoder) data of
                 Ok stateUpdate ->
                     let
                         chatStateUpdate : ChatStateUpdate
@@ -244,7 +235,6 @@ update msg model =
                     { model | session = LoggedSession session } |> noCmd
 
                 SetSession Nothing ->
-                    -- TODO: logout
                     { model | session = GuestSession } |> noCmd
 
                 SetScrollbarsVisibility visible ->
@@ -310,7 +300,6 @@ update msg model =
                             )
 
                         Nothing ->
-                            {- no valid token, guest session -}
                             ( { model | session = GuestSession }
                             , Route.modifyUrl model Route.Chat
                             )
@@ -373,7 +362,7 @@ updatePage page msg model =
             in
             toPageWithGlobalMsgs Login LoginMsg (Login.update ctx) subMsg
 
-        ( ChatMsg subMsg, Chat subModel, LoggedSession session ) ->
+        ( ChatMsg subMsg, Chat subModel, session ) ->
             let
                 ctx =
                     buildCtx subModel ChatMsg session
@@ -397,6 +386,15 @@ initRoute maybeRoute model =
         errored =
             pageErrored model
 
+        initPage initFn pageStateHolder msgLift maybeSession =
+            let
+                ( subModel, subMsg ) =
+                    initFn maybeSession
+            in
+            ( { model | page = pageStateHolder <| subModel }
+            , Cmd.map msgLift subMsg
+            )
+
         whenLogged func =
             case model.session of
                 LoggedSession session ->
@@ -405,17 +403,8 @@ initRoute maybeRoute model =
                 GuestSession ->
                     initRoute (Just Route.Login) model
 
-        initWhenLogged initFn pageStateHolder msgLift =
-            whenLogged
-                (\session ->
-                    let
-                        ( subModel, subMsg ) =
-                            initFn session
-                    in
-                    ( { model | page = pageStateHolder <| subModel }
-                    , Cmd.map msgLift subMsg
-                    )
-                )
+        initIfLogged initFn pageStateHolder msgLift =
+            whenLogged (initPage initFn pageStateHolder msgLift)
     in
     case maybeRoute of
         Nothing ->
@@ -432,9 +421,9 @@ initRoute maybeRoute model =
             ( { model | session = GuestSession }
             , Cmd.batch
                 [ logOut () |> sendMutationRequest LogOut_Response
-                , Route.modifyUrl model Route.Login
+                , Route.modifyUrl model Route.Chat
                 ]
             )
 
         Just Route.Chat ->
-            initWhenLogged Chat.init Page.Chat ChatMsg
+            initPage Chat.init Page.Chat ChatMsg (unpackSession model.session)

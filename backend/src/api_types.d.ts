@@ -1,28 +1,28 @@
 export interface Message {
-  id: number,
-  content: string,
-  authorId: number,
-  datetime: Date
+  id?: number,
+  content?: string,
+  authorId?: number,
+  datetime?: Date
 }
 export interface Person {
-  id: number
-  name: string
-  avatarSeed: number
+  id?: number
+  name?: string
+  avatarSeed?: number
 }
 export interface ChatStateUpdate {
-  people: Array<Person>,
-  newMessages: Array<Message>
-}
-export interface SignInResult {
-  personId: number,
-  personName: number
+  people?: Array<Person>,
+  newMessages?: Array<Message>
 }
 export interface ApiQuery {
   chatState: (since: Date) => ChatStateUpdate
-  checkAuthSession: () => SignInResult | null
+  checkAuthSession: () => Person | null
 }
 export interface ApiMutation {
-  logIn: (root: any, input: { name: String, passwordHash: String, since?: Date }) => SignInResult
-  logOut: () => null
-  addMessage: (root: any, input: { content: String }) => number
+  logIn: (root: any, input: { name: string, passwordHash: string }, ctx: ApiContext) => Person
+  logOut: (root: any, input: any, ctx: ApiContext) => null
+  addMessage: (root: any, input: { content: string }, ctx: ApiContext) => number
+}
+export interface ApiContext {
+  sessionID: string
+  session: Express.Session
 }

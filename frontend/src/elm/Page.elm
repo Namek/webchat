@@ -2,12 +2,15 @@ module Page exposing (..)
 
 import Data.Context exposing (GlobalMsg)
 import Data.Session exposing (SessionState(..))
-import Element exposing (Element, alignRight, centerX, column, fill, height, padding, spacing, text, width)
+import Element exposing (Element, alignRight, centerX, column, fill, height, inFront, link, padding, paddingXY, spacing, text, width)
+import Element.Font as Font
 import Misc exposing (viewIf)
+import Misc.Colors as Colors
 import Page.Chat
 import Page.Errored
 import Page.Login
 import Ports exposing (ConnectionStatus(..))
+import Route
 
 
 type Page
@@ -21,9 +24,16 @@ frame : (GlobalMsg -> msg) -> Bool -> SessionState -> Page -> Element msg -> Ele
 frame lift isLoggedIn session activePage pageContent =
     let
         content =
-            column [ width fill, height fill, spacing 10 ]
-                [ viewIf isLoggedIn <| Element.el [ alignRight, padding 3 ] <| viewTopBar session Connected
-                , Element.el [ centerX, width fill, height fill ] pageContent
+            column
+                [ width fill
+                , height fill
+                , spacing 10
+                , inFront <|
+                    viewIf isLoggedIn <|
+                        Element.el [ alignRight, paddingXY 40 10 ] <|
+                            viewTopBar session Connected
+                ]
+                [ Element.el [ centerX, width fill, height fill ] pageContent
                 ]
     in
     Element.el
@@ -36,7 +46,10 @@ viewTopBar sesionState topBarState =
     -- TODO: display some message about connection state
     case sesionState of
         LoggedSession session ->
-            text "Log out"
+            link [ Font.color Colors.blue500, Font.size 14 ]
+                { url = Route.routeToString Route.Logout
+                , label = text "Log out"
+                }
 
         GuestSession ->
-            text "Log in"
+            Element.none

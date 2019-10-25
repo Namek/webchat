@@ -31,6 +31,18 @@ type alias Logged ctx =
     }
 
 
+{-| Context for a Page that accepts both anonymous and logged users.
+
+    type alias Context msg =
+        Maybe Logged (ContextData Model Msg msg)
+
+-}
+type alias MaybeLogged ctx =
+    { ctx
+        | session : SessionState
+    }
+
+
 type GlobalMsg
     = Navigate Route
     | SetSession (Maybe Session)

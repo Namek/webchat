@@ -1,7 +1,7 @@
 module Request.Session exposing (LogInResult, LogOutResult, checkAuthSession, logIn, logOut)
 
 import Api.Mutation as Mutation exposing (LogInRequiredArguments)
-import Api.Object.SignInResult
+import Api.Object.Person
 import Api.Query as Query
 import Graphql.Operation exposing (RootMutation, RootQuery)
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet, with)
@@ -25,17 +25,17 @@ type alias LogOutResult =
 logIn : LogInInput a -> SelectionSet LogInResult RootMutation
 logIn credentials =
     let
-        input : LogInRequiredArguments
-        input =
+        args : LogInRequiredArguments
+        args =
             { name = credentials.name
             , passwordHash = credentials.password |> MD5.hex
             }
     in
-    Mutation.logIn identity
-        input
+    Mutation.logIn
+        args
         (SelectionSet.succeed LogInResult
-            |> with Api.Object.SignInResult.personId
-            |> with Api.Object.SignInResult.personName
+            |> with Api.Object.Person.id
+            |> with Api.Object.Person.name
         )
 
 
@@ -43,8 +43,8 @@ checkAuthSession : () -> SelectionSet (Maybe LogInResult) RootQuery
 checkAuthSession () =
     Query.checkAuthSession
         (SelectionSet.succeed LogInResult
-            |> with Api.Object.SignInResult.personId
-            |> with Api.Object.SignInResult.personName
+            |> with Api.Object.Person.id
+            |> with Api.Object.Person.name
         )
 
 
