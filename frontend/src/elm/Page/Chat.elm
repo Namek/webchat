@@ -1,5 +1,6 @@
 module Page.Chat exposing (..)
 
+import Browser.Dom
 import Cmd.Extra
 import Data.Chat exposing (ChatMessage, ChatStateUpdate, MessageId, People, Person, PersonId, minutesToPassToGroupMessage, personName)
 import Data.Context exposing (ContextData, GlobalMsg, Logged, MaybeLogged)
@@ -12,13 +13,14 @@ import Graphql.Http
 import Html.Events
 import Json.Decode as Json
 import List.Extra
-import Misc exposing (css, edges, emailRegex, match, noCmd, performMsgWithDelay, timeRelativeString, urlRegex)
+import Misc exposing (attr, css, edges, emailRegex, match, noCmd, performMsgWithDelay, timeRelativeString, urlRegex)
 import Misc.Colors as Colors
 import Regex exposing (Regex)
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (sendMutationRequest, sendQueryRequest)
 import Request.Message exposing (addMessage, getChatState)
 import Route
+import Task
 import Time
 import Time.Extra exposing (Interval(..), posixToParts)
 
@@ -48,9 +50,10 @@ init session =
     )
 
 
-receiveChatStateUpdate : Model -> ChatStateUpdate -> Model
+receiveChatStateUpdate : Model -> ChatStateUpdate -> ( Model, Cmd Msg )
 receiveChatStateUpdate model chatStateUpdate =
     { model | chatState = Just <| mergeUpdateToChatState model.chatState chatStateUpdate }
+        |> Cmd.Extra.with (jumpToBottom chatMessagesElementId)
 
 
 type alias Context msg =
@@ -98,6 +101,7 @@ type Msg
     | OnInputTextKeyDown Int
     | SendMessage String
     | SendMessage_Response (RemoteData (Graphql.Http.Error ()) ())
+    | Jumped (Result Browser.Dom.Error ())
 
 
 update : Context msg -> Msg -> ( ( Model, Cmd Msg ), Cmd GlobalMsg )
@@ -126,7 +130,9 @@ update { model } msg =
                         -- TODO: show the error in modal or elsewhere, instead of returning old state
                         |> RemoteData.withDefault chatState
             in
-            { model | chatState = newChatState } |> noCmd |> noCmd
+            { model | chatState = newChatState }
+                |> Cmd.Extra.with (jumpToBottom chatMessagesElementId)
+                |> noCmd
 
         SetInputText text ->
             { model | inputText = text } |> noCmd |> noCmd
@@ -162,6 +168,14 @@ update { model } msg =
 
         SendMessage_Response _ ->
             model |> noCmd |> noCmd
+
+        Jumped _ ->
+            model |> noCmd |> noCmd
+
+
+jumpToBottom id =
+    Browser.Dom.setViewportOf id 0 100000
+        |> Task.attempt Jumped
 
 
 
@@ -339,6 +353,10 @@ insertAndGroupMessages people oldState newMessages =
 -- VIEW --
 
 
+chatMessagesElementId =
+    "chat-messages-container"
+
+
 view : Context msg -> Element msg
 view ctx =
     let
@@ -387,6 +405,7 @@ view ctx =
                     , spacingXY 0 14
                     , Font.size 16
                     , scrollbarY
+                    , attr "id" chatMessagesElementId
                     ]
                   <|
                     renderMessages

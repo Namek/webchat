@@ -214,10 +214,11 @@ update msg model =
                     case model.page of
                         Chat pageModel ->
                             let
-                                subModel =
+                                ( subModel, subCmd ) =
                                     Chat.receiveChatStateUpdate pageModel chatStateUpdate
                             in
-                            { model | page = Chat subModel } |> noCmd
+                            { model | page = Chat subModel }
+                                |> Cmd.Extra.with (Cmd.map ChatMsg subCmd)
 
                         _ ->
                             model |> noCmd
