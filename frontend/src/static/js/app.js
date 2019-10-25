@@ -4,6 +4,10 @@ const app = Elm.Main.init({
 });
 
 app.ports.createSubscriptions.subscribe(function(subscription) {
+  openSubscriptionSocket(subscription)
+})
+
+function openSubscriptionSocket(subscription) {
   const ws = new WebSocket("ws://" + document.location.host + "/graphql", 'graphql-ws')
   const sendJson = json => ws.send(JSON.stringify(json))
 
@@ -18,7 +22,7 @@ app.ports.createSubscriptions.subscribe(function(subscription) {
   }
   ws.onmessage = evt => {
     var msg = JSON.parse(evt.data)
-    console.log(msg)
+
     if (msg.type == 'connection_ack') {
       app.ports.socketStatusConnected.send(null)
     }
@@ -28,8 +32,12 @@ app.ports.createSubscriptions.subscribe(function(subscription) {
       }
     }
   }
-  ws.onerror = evt => console.log(evt)
-  ws.onclose = evt => {
-    // TODO socketStatusReconnecting
+  ws.onerror = evt => {
+    app.ports.socketStatusReconnecting.send(null)
+    setTimeout(() => openSubscriptionSocket(), 1000)
   }
-})
+  ws.onclose = evt => {
+    app.ports.socketStatusReconnecting.send(null)
+    setTimeout(() => openSubscriptionSocket(), 1000)
+  }
+}
