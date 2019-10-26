@@ -28,7 +28,7 @@ RUN NODE_ENV=production npm run build
 # Build: Frontend
 WORKDIR /frontend/
 COPY frontend/ ./
-RUN  dotnet script build.csx build && ls /frontend && ls /frontend/public
+RUN  dotnet script build.csx build
 
 
 ########################
