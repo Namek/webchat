@@ -20,6 +20,8 @@
    - Mutation: logIn, logOut, addMessage
    - and Subscription: chat updates
 - frontend/UX: multiple messages of the same author in a row are grouped within 5 minutes
+- frontend: posted links are clickable
+- backend/database: limit message count with removal batching
 
 ## Possible improvements
 
@@ -31,6 +33,7 @@
 - frontend UX: better indications about connection status
 - timezones need some care
 - build: reduce size of Docker downloads
+- backend/GraphQL: get from DB only the query-specified fields
 
 
 # Development

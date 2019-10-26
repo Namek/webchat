@@ -75,7 +75,7 @@ gqlServer.applyMiddleware({ app: app, path: '/api' })
 gqlServer.installSubscriptionHandlers(httpServer)
 
 
-initDatabaseIfNeeded().then(res => {
+state.repo.init().then(res => {
   httpServer.listen(environment.port, environment.host, () => {
     console.log(`🚀 WWW server ready at http://localhost/${environment.port}`)
     console.log(`🚀 Subscriptions ready at ws://localhost:${environment.port}${gqlServer.subscriptionsPath}`)

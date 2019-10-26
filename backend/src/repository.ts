@@ -1,15 +1,59 @@
 import crypto from 'crypto'
 import { Message, Person } from './api_types'
-import { queryDb } from './db'
+import { queryDb, initDatabaseIfNeeded } from './db'
 import { environment } from './environment'
 
 const hashMd5 = (text: string) => crypto.createHash('md5').update(text).digest("hex")
 
+// table names, these have to be the same as in `./db_init.sql` file
+const T_MESSAGES = "messages", T_PEOPLE = "people"
+
 
 export default class Repository {
+  private isMessageLimitEnabled = false
+  private messageCount: number = 0
+  private messageCap: number = 0
+
+  async init() {
+    await initDatabaseIfNeeded()
+
+    const res = await queryDb(`SELECT COUNT(*) as c FROM ${T_MESSAGES}`)
+    this.messageCount = +res.rows[0].c
+
+    if (environment.dbMessageLimit > 0) {
+      if (environment.dbMessageLimitRemovalBatchSize < 0) {
+        throw new Error("environment.dbMessageLimitRemovalBatchSize has to be at least 0!")
+      }
+
+      this.messageCap = environment.dbMessageLimit + environment.dbMessageLimitRemovalBatchSize
+      this.isMessageLimitEnabled = true
+
+      await this.deleteOldMessages()
+    }
+  }
+
+  private async deleteOldMessages() {
+    // instead of removing the oldest message every time, batch removing old messages
+    if (this.isMessageLimitEnabled && this.messageCount >= this.messageCap) {
+      const messageCountToRemove = this.messageCount - environment.dbMessageLimit
+
+      if (environment.isDebugLoggingEnabled) {
+        console.log(`Removed ${messageCountToRemove} oldest messages:`)
+      }
+
+      await queryDb(`
+        DELETE FROM ${T_MESSAGES} WHERE id IN (
+          SELECT id FROM ${T_MESSAGES} ORDER BY datetime, id LIMIT ${messageCountToRemove}
+        )
+      `)
+
+      this.messageCount -= messageCountToRemove
+    }
+  }
+
   async getMessages(since?: Date): Promise<Array<Message>> {
     // TODO support `since`
-    return queryDb("SELECT * FROM messages")
+    return queryDb(`SELECT * FROM ${T_MESSAGES} ORDER BY datetime LIMIT ${environment.dbMessageLimit}`)
       .then(res => res.rows.map(row =>
         ({
           id: row.id,
@@ -22,7 +66,7 @@ export default class Repository {
 
   async getPeople(): Promise<Array<Person>> {
     return queryDb(`
-      SELECT id, name, avatar_seed FROM people
+      SELECT id, name, avatar_seed FROM ${T_PEOPLE}
     `)
       .then(res => res.rows.map(row =>
         ({
@@ -34,8 +78,6 @@ export default class Repository {
   }
 
   async addMessage(authorId: number, content: string): Promise<Message> {
-    // TODO queue removing messages over limit
-
     const message: Message = {
       authorId,
       datetime: new Date(),
@@ -43,7 +85,7 @@ export default class Repository {
     }
 
     const res = await queryDb(`
-      INSERT INTO messages (content, author_id, datetime)
+      INSERT INTO ${T_MESSAGES} (content, author_id, datetime)
       VALUES ($1, $2, to_timestamp($3)) RETURNING id
     `, [
       message.content,
@@ -52,13 +94,16 @@ export default class Repository {
     ])
 
     message.id = res.rows[0].id
+    this.messageCount += 1
+
+    await this.deleteOldMessages()
 
     return message
   }
 
   async checkUserCredentialsOrCreateUser(name: string, passwordHash: string): Promise<Person | null> {
     let res = await queryDb(`
-      SELECT id, name, avatar_seed, password FROM people WHERE name=$1
+      SELECT id, name, avatar_seed, password FROM ${T_PEOPLE} WHERE name=$1
     `, [name])
 
     const encryptedPassword = hashMd5(passwordHash + environment.secret_dbPasswordSalt)
@@ -67,7 +112,7 @@ export default class Repository {
       // Create user and return it
       const newAvatarSeed = Math.floor(Math.random() * 1000000)
       res = await queryDb(`
-        INSERT INTO people(name, password, avatar_seed)
+        INSERT INTO ${T_PEOPLE}(name, password, avatar_seed)
         VALUES ($1, $2, $3) RETURNING id
       `, [
         name, encryptedPassword, newAvatarSeed

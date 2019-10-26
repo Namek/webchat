@@ -8,6 +8,7 @@ const staticFilesPath = path.resolve(path.dirname(process.argv[1]),
 console.log("env.isDev = ", isDevelopment)
 
 export interface Environment {
+  isDebugLoggingEnabled: boolean
   apollo: {
     introspection: boolean
     playground: boolean
@@ -15,13 +16,19 @@ export interface Environment {
   host: string
   port: number
 
-  database: {
+  databaseConnection: {
     host: string
     port: number
     database: string
     user: string
     password: string
   }
+
+  /** The limit for messages in database. Put 0 to disable. */
+  dbMessageLimit: number
+
+  /** Instead of removing the oldest message every time a single one message is added, batch removing old messages */
+  dbMessageLimitRemovalBatchSize: number,
 
   // relative to output `server.js` file
   staticFilesPath: string
@@ -31,19 +38,22 @@ export interface Environment {
 }
 
 export const environment: Environment = {
+  isDebugLoggingEnabled: process.env.DEBUG_LOGGING ? new Boolean(process.env.DEBUG_LOGGING).valueOf() : isDevelopment,
   apollo: {
     introspection: process.env.APOLLO_INTROSPECTION === 'true',
     playground: process.env.APOLLO_PLAYGROUND === 'true'
   },
   host: '0.0.0.0',
   port: +(process.env.PORT || defaultPortWww),
-  database: {
+  databaseConnection: {
     host: process.env.PGHOST || 'localhost',
     user: process.env.PGUSER || 'postgres',
     password: process.env.PGPASSWORD || 'postgres',
     database: process.env.PGDATABASE || 'postgres',
     port: +(process.env.PGPORT || 5432)
   },
+  dbMessageLimit: +(process.env.DB_MESSAGE_LIMIT || 100),
+  dbMessageLimitRemovalBatchSize: +(process.env.DB_MESSAGE_LIMIT_REMOVAL_BATCH_SIZE || 10),
   staticFilesPath,
   isSecureHttpEnabled: false, // TODO https not implemeneted
   secret_session: process.env.SECRET_SESSION || '123435rsedgfs',

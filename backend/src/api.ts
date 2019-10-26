@@ -3,6 +3,7 @@ import { withFilter } from 'graphql-subscriptions'
 import typeDefs from "!!raw-loader!./api.graphql"
 import { ChatStateUpdate, Message, Person, ApiMutation, ApiQuery } from './api_types'
 import { AppState, User } from './state'
+import { environment } from "./environment"
 
 const CHAT_STATE_UPDATED = 'chatStateUpdated'
 
@@ -66,7 +67,9 @@ export default (state: AppState) => {
       return null
     },
     addMessage: async (root, { content }, ctx) => {
-      console.log(`New message: ${content}`)
+      if (environment.isDebugLoggingEnabled) {
+        console.log(`New message: ${content}`)
+      }
 
       // find out if this user is authorized, otherwise he can't post messages
       let user = state.userSessions.find(u => u.cookieSessionId == ctx.sessionID)
