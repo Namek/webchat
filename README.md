@@ -35,6 +35,8 @@
 
 # Development
 
+All env vars are defined in `/backend/src/environment.ts`. [dotenv](https://www.npmjs.com/package/dotenv) is imported so you can create `/backend/.env` file changing the defaults.
+
 ## Backend
 
     cd /backend

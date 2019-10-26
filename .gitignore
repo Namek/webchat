@@ -1,5 +1,6 @@
 .idea/
 elm-stuff/
 /frontend/public/
+/backend/.env
 /backend/dist/
 /backend/node_modules/
