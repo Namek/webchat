@@ -172,7 +172,8 @@ void copyStatics()
     log("Copying statics...");
     foreach (var file in files)
     {
-        copyStatic(file, "  - ");
+        if (generateDebugElm || Path.GetFileName(file) != "auto-reload.js")
+            copyStatic(file, "  - ");
     }
 }
 
