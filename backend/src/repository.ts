@@ -53,7 +53,11 @@ export default class Repository {
 
   async getMessages(since?: Date): Promise<Array<Message>> {
     // TODO support `since`
-    return queryDb(`SELECT * FROM ${T_MESSAGES} ORDER BY datetime LIMIT ${environment.dbMessageLimit}`)
+    return queryDb(`
+      WITH t AS
+        (SELECT * FROM ${T_MESSAGES} ORDER BY datetime DESC, id DESC LIMIT ${environment.dbMessageLimit})
+      SELECT * FROM t ORDER BY datetime ASC, id ASC
+    `)
       .then(res => res.rows.map(row =>
         ({
           id: row.id,
