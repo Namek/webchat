@@ -27,6 +27,7 @@ export interface Environment {
   staticFilesPath: string
   isSecureHttpEnabled: boolean
   secret_session: string
+  secret_dbPasswordSalt: string
 }
 
 export const environment: Environment = {
@@ -45,5 +46,6 @@ export const environment: Environment = {
   },
   staticFilesPath,
   isSecureHttpEnabled: false, // TODO https not implemeneted
-  secret_session: process.env.SECRET_SESSION || '123435rsedgfs'
+  secret_session: process.env.SECRET_SESSION || '123435rsedgfs',
+  secret_dbPasswordSalt: process.env.SECRET_DB_PASSWORD_SALT || '654544124213'
 };

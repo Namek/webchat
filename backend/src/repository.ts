@@ -1,12 +1,9 @@
 import crypto from 'crypto'
 import { Message, Person } from './api_types'
 import { queryDb } from './db'
-
+import { environment } from './environment'
 
 const hashMd5 = (text: string) => crypto.createHash('md5').update(text).digest("hex")
-
-// TODO change the key to get it from configuration/env
-const SECRET_SALT = "32523ter21"
 
 
 export default class Repository {
@@ -64,7 +61,7 @@ export default class Repository {
       SELECT id, name, avatar_seed, password FROM people WHERE name=$1
     `, [name])
 
-    const encryptedPassword = hashMd5(passwordHash + SECRET_SALT)
+    const encryptedPassword = hashMd5(passwordHash + environment.secret_dbPasswordSalt)
 
     if (res.rows.length == 0) {
       // Create user and return it
