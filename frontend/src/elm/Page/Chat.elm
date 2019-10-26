@@ -4,11 +4,12 @@ import Browser.Dom
 import Cmd.Extra
 import Data.Chat exposing (ChatMessage, ChatStateUpdate, MessageId, People, Person, PersonId, minutesToPassToGroupMessage, personName)
 import Data.Context exposing (ContextData, GlobalMsg, Logged, MaybeLogged)
-import Data.Session exposing (Session)
+import Data.Session exposing (Session, SessionState)
 import Dict
 import Element exposing (Element, alignBottom, alignTop, centerX, clip, column, el, fill, height, link, maximum, newTabLink, padding, paddingEach, px, row, scrollbarY, spacing, spacingXY, text, width, wrappedRow)
 import Element.Font as Font exposing (Font)
 import Element.Input as Input exposing (labelHidden)
+import Element.Lazy
 import Graphql.Http
 import Html.Events
 import Json.Decode as Json
@@ -365,55 +366,58 @@ view ctx =
     in
     case model.chatState of
         Just chatState ->
-            let
-                groupedMsgs =
-                    chatState.messages
-
-                renderMessages =
-                    case countMessages groupedMsgs of
-                        0 ->
-                            [ column [ centerX, paddingEach { edges | top = 20 } ]
-                                [ text "Nothing's going on here. Invite your friends in your real life to chat here!"
-                                , if ctx.session == Data.Session.GuestSession then
-                                    row [ Font.size 25, paddingEach { edges | top = 40 }, centerX ]
-                                        [ link []
-                                            { url = Route.routeToString Route.Login
-                                            , label = el [ Font.color Colors.blue500 ] <| text "Log in"
-                                            }
-                                        , text " to chat"
-                                        ]
-
-                                  else
-                                    Element.none
-                                ]
-                            ]
-
-                        _ ->
-                            groupedMsgs |> List.map (renderMessageGroup time timezone chatState.people)
-            in
-            column
-                [ width fill
-                , height fill
-                , css "max-height" "100vh"
-                , padding 10
-                , clip
-                , spacing 15
-                ]
-                [ column
-                    [ width fill
-                    , height fill
-                    , spacingXY 0 14
-                    , Font.size 16
-                    , scrollbarY
-                    , attr "id" chatMessagesElementId
-                    ]
-                  <|
-                    renderMessages
-                , renderChatInput ctx
-                ]
+            renderChat ctx chatState
 
         Nothing ->
             el [ centerX ] <| text "Loading..."
+
+
+renderChat : Context msg -> ChatState -> Element msg
+renderChat ctx chatState =
+    column
+        [ width fill
+        , height fill
+        , css "max-height" "100vh"
+        , padding 10
+        , clip
+        , spacing 15
+        ]
+        [ Element.Lazy.lazy4 renderMessages ctx.session chatState ctx.time ctx.timezone
+        , renderChatInput ctx
+        ]
+
+
+renderMessages : SessionState -> ChatState -> Time.Posix -> Time.Zone -> Element msg
+renderMessages session chatState time timezone =
+    column
+        [ width fill
+        , height fill
+        , spacingXY 0 14
+        , Font.size 16
+        , scrollbarY
+        , attr "id" chatMessagesElementId
+        ]
+    <|
+        case countMessages chatState.messages of
+            0 ->
+                [ column [ centerX, paddingEach { edges | top = 20 } ]
+                    [ text "Nothing's going on here. Invite your friends in your real life to chat here!"
+                    , if session == Data.Session.GuestSession then
+                        row [ Font.size 25, paddingEach { edges | top = 40 }, centerX ]
+                            [ link []
+                                { url = Route.routeToString Route.Login
+                                , label = el [ Font.color Colors.blue500 ] <| text "Log in"
+                                }
+                            , text " to chat"
+                            ]
+
+                      else
+                        Element.none
+                    ]
+                ]
+
+            _ ->
+                chatState.messages |> List.map (renderMessageGroup time timezone chatState.people)
 
 
 renderMessageGroup : Time.Posix -> Time.Zone -> People -> AuthorMessages -> Element msg
