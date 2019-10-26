@@ -1,8 +1,9 @@
 module Page.Chat exposing (..)
 
+import Bitwise
 import Browser.Dom
 import Cmd.Extra
-import Data.Chat exposing (ChatMessage, ChatStateUpdate, MessageId, People, Person, PersonId, minutesToPassToGroupMessage, personName)
+import Data.Chat exposing (ChatMessage, ChatStateUpdate, MessageId, People, Person, PersonId, minutesToPassToGroupMessage, personAvatarSeed, personName)
 import Data.Context exposing (ContextData, GlobalMsg, Logged, MaybeLogged)
 import Data.Session exposing (Session, SessionState)
 import Dict
@@ -11,19 +12,25 @@ import Element.Font as Font exposing (Font)
 import Element.Input as Input exposing (labelHidden)
 import Element.Lazy
 import Graphql.Http
+import Html exposing (Html)
 import Html.Events
+import Html.Lazy
 import Json.Decode as Json
 import List.Extra
 import Misc exposing (attr, css, edges, emailRegex, match, noCmd, performMsgWithDelay, timeRelativeString, urlRegex)
 import Misc.Colors as Colors
+import PseudoRandom
 import Regex exposing (Regex)
 import RemoteData exposing (RemoteData)
 import Request.Common exposing (sendMutationRequest, sendQueryRequest)
 import Request.Message exposing (addMessage, getChatState)
 import Route
+import Svg
+import Svg.Attributes as SvgAttr
 import Task
 import Time
 import Time.Extra exposing (Interval(..), posixToParts)
+import Views.Avatar exposing (renderAvatar)
 
 
 
@@ -68,7 +75,11 @@ type alias ChatMessages =
 
 
 type alias AuthorMessages =
-    { authorId : PersonId, authorName : String, messages : List RenderedChatMessage }
+    { authorId : PersonId
+    , authorName : String
+    , authorAvatarSeed : Int
+    , messages : List RenderedChatMessage
+    }
 
 
 type alias RenderedChatMessage =
@@ -341,6 +352,7 @@ insertAndGroupMessages people oldState newMessages =
                         newGroup =
                             { authorId = newMsg.authorId
                             , authorName = personName newMsg.authorId people
+                            , authorAvatarSeed = personAvatarSeed newMsg.authorId people
                             , messages = [ newMsg ]
                             }
                     in
@@ -423,7 +435,9 @@ renderMessages session chatState time timezone =
 renderMessageGroup : Time.Posix -> Time.Zone -> People -> AuthorMessages -> Element msg
 renderMessageGroup time timezone people messageGroup =
     row [ width fill, spacing 20 ]
-        [ el [ alignTop ] <| text ""
+        [ el [ alignTop ] <|
+            Element.html <|
+                Html.Lazy.lazy renderAvatar messageGroup.authorAvatarSeed
         , column [ width fill, alignTop, spacing 7 ]
             (renderGroupHeader time timezone messageGroup
                 :: (messageGroup.messages |> List.map renderMessage)

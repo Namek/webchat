@@ -45,4 +45,9 @@ minutesToPassToGroupMessage =
 
 personName : PersonId -> People -> String
 personName personId people =
-    Dict.get personId people |> Maybe.map (\p -> p.name) |> Maybe.withDefault "👻"
+    Dict.get personId people |> Maybe.map .name |> Maybe.withDefault "👻"
+
+
+personAvatarSeed : PersonId -> People -> Int
+personAvatarSeed personId people =
+    Dict.get personId people |> Maybe.map .avatarSeed |> Maybe.withDefault 0

@@ -21,6 +21,7 @@
    - and Subscription: chat updates
 - frontend/UX: multiple messages of the same author in a row are grouped within 5 minutes
 - frontend: posted links are clickable
+- frontend: every person gets a randomized avatar!
 - backend/database: limit message count with removal batching
 
 ## Possible improvements
