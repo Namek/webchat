@@ -15,6 +15,14 @@ export interface Environment {
   host: string
   port: number
 
+  database: {
+    host: string
+    port: number
+    database: string
+    user: string
+    password: string
+  }
+
   // relative to output `server.js` file
   staticFilesPath: string
   isSecureHttpEnabled: boolean
@@ -28,6 +36,13 @@ export const environment: Environment = {
   },
   host: '0.0.0.0',
   port: +(process.env.PORT || defaultPortWww),
+  database: {
+    host: process.env.PGHOST || 'localhost',
+    user: process.env.PGUSER || 'postgres',
+    password: process.env.PGPASSWORD || 'postgres',
+    database: process.env.PGDATABASE || 'postgres',
+    port: +(process.env.PGPORT || 5432)
+  },
   staticFilesPath,
   isSecureHttpEnabled: false, // TODO https not implemeneted
   secret_session: process.env.SECRET_SESSION || '123435rsedgfs'
